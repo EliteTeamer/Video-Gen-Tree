@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>图像 / 视频生成 · 能力树</title>
+<title>Wan + LTX 视频生成串联能力树</title>
 <style>
   :root{
     --bg:#f4f3ef; --panel:#ffffff; --ink:#222019; --muted:#777469; --faint:#9b988e; --line:#e6e2d9;
@@ -156,9 +156,9 @@
   <header>
     <h1>
       <svg class="leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>
-      图像 / 视频生成 · 能力树
+      Wan + LTX 视频生成串联能力树
     </h1>
-    <p>树状层级:能力层 → 子分组 → 能力点。点击方块循环状态,双击文字编辑,每一层级都可加备注,顶部支持按状态筛选与搜索。所有改动自动保存在本浏览器。</p>
+    <p>以 Wan2.2 / TI2V-5B 与 LTX 2.3 为双主线,按一次视频生成的真实链路串联:输入条件 → 条件编码 → VAE / latent → DiT 主干 → 去噪采样 → 解码输出 → 训练评测。点击方块循环状态,双击文字编辑,顶部支持筛选与搜索。</p>
   </header>
 
   <div class="bar">
@@ -209,8 +209,7 @@
 <input type="file" id="fileInput" accept=".json" style="display:none">
 
 <script>
-const STORAGE_KEY = 'gen-skill-tree-v2';
-const OLD_KEY = 'gen-skill-tree-v1';
+const STORAGE_KEY = 'gen-skill-tree-wan-ltx-v1';
 const STATES = ['todo','prog','done'];
 const STATE_LABEL = {todo:'未开始', prog:'进行中', done:'已完成'};
 const STATE_MARK = {todo:'', prog:'~', done:'✓'};
@@ -225,157 +224,183 @@ const ICONS = {
 
 function defaultData(){
   return [
-    {t:'第 1 层 · 核心网络架构', g:[
-      {n:'理论', items:[
-        {x:'U-Net — 编码器-解码器 + skip connection,扩散早期主干', s:'done'},
-        {x:'Transformer / Attention — self / cross-attention、位置编码', s:'done'},
-        {x:'DiT (Diffusion Transformer) — Transformer 替代 U-Net,重点 AdaLN-Zero 条件注入', s:'todo'},
-        {x:'VAE / 自编码器 — 像素 → 潜空间压缩,latent diffusion 基础', s:'todo'},
-        {x:'VQ-VAE / Tokenizer — 离散化 latent,自回归路线基础', s:'todo'},
-        {x:'CLIP / 文本编码器 — 文图对齐;了解 T5 在 SD3/FLUX 中的角色', s:'done'},
+    {t:'第 0 层 · 双主线地图', g:[
+      {n:'共性原理', items:[
+        {x:'[共性] 把视频生成理解成一条链路:输入条件 → 条件编码 → latent 表示 → DiT 去噪 → VAE 解码 → 评测复现', s:'prog'},
+        {x:'[共性] 建立两个坐标轴:生成质量由表征容量和训练数据决定,推理速度由 token 数、步数和模型规模决定', s:'todo'},
       ]},
-      {n:'代码', items:[
-        {x:'手写最小 U-Net(带 time embedding 注入)', s:'todo'},
-        {x:'手写最小 DiT block(patchify + AdaLN + attention)', s:'todo'},
-        {x:'用 diffusers 单独跑通 VAE 的 encode/decode', s:'todo'},
-        {x:'用 transformers 调 CLIP,提取 embedding 算相似度', s:'todo'},
+      {n:'Wan2.2 / TI2V-5B 细节', items:[
+        {x:'[Wan] 以 TI2V-5B 作为入口:单一稠密 DiT,同时覆盖 t2v 与 i2v,适合理解最干净的视频生成主线', s:'prog'},
+        {x:'[Wan] 先读 Wan2.2-Code/index.html 的 0-1 节,把 generate.py → WanTI2V.generate() → t2v/i2v 的调用链画出来', s:'todo'},
       ]},
-    ]},
-    {t:'第 2 层 · 生成模型理论(按顺序学)', g:[
-      {n:'理论', items:[
-        {x:'VAE / GAN(快速过)— 理解局限,知道为何被扩散取代', s:'todo'},
-        {x:'DDPM — 前向加噪/反向去噪、变分下界、ε-prediction', s:'done'},
-        {x:'DDIM — 确定性采样、加速、与 ODE 的联系', s:'todo'},
-        {x:'Score-based / SDE 统一框架 — 把 DDPM/SMLD 统一为 SDE', s:'todo'},
-        {x:'Classifier-Free Guidance (CFG) — 条件生成核心,务必推导', s:'todo'},
-        {x:'Flow Matching — 连续归一化流回归式训练,SD3/FLUX 核心', s:'done'},
-        {x:'Rectified Flow ★ — 直线化 ODE、reflow、少步采样(主攻方向)', s:'prog'},
-        {x:'自回归生成 (AR) — VAR / MAR 等新路线,作为扩散对照', s:'todo'},
+      {n:'LTX 2.3 细节', items:[
+        {x:'[LTX] 以 LTX 2.3 作为对照:DiT 音视频基础模型,强调视频和音频同步、重建 VAE、蒸馏与多阶段 upscaler', s:'todo'},
+        {x:'[LTX] 区分 LTX-Video 实时视频路线与 LTX 2.3 音视频联合路线,先记录版本、模型卡、仓库入口和推理工作流', s:'todo'},
       ]},
-      {n:'代码', items:[
-        {x:'从零手写 DDPM(MNIST/CIFAR,约 200 行)训练+采样', s:'todo'},
-        {x:'从零手写 DDIM 采样器,对比步数与质量', s:'todo'},
-        {x:'从零手写 Rectified Flow(MNIST)', s:'todo'},
-        {x:'实现 CFG,对比 guidance scale 影响', s:'todo'},
-        {x:'读 diffusers scheduler 源码,对照理论核对公式', s:'todo'},
+      {n:'对照问题', items:[
+        {x:'[对照] 为什么 Wan 适合作为源码阅读主线,而 LTX 适合作为效率、音视频和产品化链路对照?', s:'todo'},
+        {x:'[对照] 同样是 latent diffusion + transformer,两者分别把复杂度放在 VAE、条件连接、主干或后处理的哪一侧?', s:'todo'},
+      ]},
+      {n:'代码 / 实验任务', items:[
+        {x:'[代码] 为 Wan 和 LTX 各建一页阅读笔记:模型入口、核心模块、关键张量形状、推理命令、可复现实验', s:'todo'},
+        {x:'[代码] 用 1 个 prompt 分别跑 Wan/LTX demo,记录分辨率、帧数、步数、显存、耗时和肉眼质量', s:'todo'},
       ]},
     ]},
-    {t:'第 3 层 · 图像生成实战', g:[
-      {n:'模型与生态', items:[
-        {x:'Stable Diffusion 1.5 / SDXL — 经典 latent diffusion', s:'todo'},
-        {x:'SD3 / FLUX — Flow Matching + DiT 新一代,重点研究', s:'todo'},
-        {x:'熟练使用 HuggingFace diffusers 的组件拆装', s:'todo'},
+    {t:'第 1 层 · 输入条件与任务分发', g:[
+      {n:'共性原理', items:[
+        {x:'[共性] 把任务拆成 t2v、i2v、首尾帧、音视频、姿态/参考图等条件组合,先明确每种条件进模型的位置', s:'todo'},
+        {x:'[共性] prompt、negative prompt、seed、分辨率、帧数、FPS、guidance scale 是复现实验的最小配置集合', s:'todo'},
       ]},
-      {n:'可控与微调', items:[
-        {x:'LoRA — 低秩微调,显存友好,必会', s:'todo'},
-        {x:'DreamBooth / Textual Inversion — 概念注入、个性化', s:'todo'},
-        {x:'ControlNet / T2I-Adapter — 结构可控(边缘/深度/姿态)', s:'todo'},
-        {x:'IP-Adapter — 图像提示、风格/主体保持', s:'todo'},
-        {x:'Inpainting / Outpainting — 局部重绘', s:'todo'},
+      {n:'Wan2.2 / TI2V-5B 细节', items:[
+        {x:'[Wan] generate.py 负责解析 task/size/prompt/ckpt_dir,再从 WAN_CONFIGS 选择对应 pipeline', s:'todo'},
+        {x:'[Wan] WanTI2V.generate() 只看 img 是否为空来分流:t2v 走纯文本生成,i2v 把首帧作为 latent 条件钉住', s:'todo'},
       ]},
-      {n:'采样与加速', items:[
-        {x:'采样器对比 — Euler / DPM-Solver++ / UniPC', s:'todo'},
-        {x:'蒸馏加速 — LCM / Turbo / Lightning', s:'todo'},
-        {x:'量化与显存优化 — fp16/bf16、attention slicing、offload', s:'todo'},
+      {n:'LTX 2.3 细节', items:[
+        {x:'[LTX] 梳理 text-to-video、image-to-video、audio-to-video 和音视频同步输出的入口参数,重点记录 Pro Flow 与快速/蒸馏 flow', s:'todo'},
+        {x:'[LTX] 关注 1080p、竖屏、最高时长、多 FPS 和 upscaler 组合如何进入工作流配置', s:'todo'},
       ]},
-      {n:'代码', items:[
-        {x:'用 diffusers 跑通 SDXL / FLUX 文生图', s:'todo'},
-        {x:'用自己数据训练一个 LoRA 并加载推理', s:'todo'},
-        {x:'接入 ControlNet(canny/depth)实现可控生成', s:'todo'},
-        {x:'对比 LCM/Turbo 蒸馏模型的速度-质量权衡', s:'todo'},
+      {n:'对照问题', items:[
+        {x:'[对照] Wan 的任务分发更像共享主干 + config 分支,LTX 更像产品工作流 + 多阶段组件编排,这会影响源码阅读顺序', s:'todo'},
+        {x:'[对照] i2v 条件在 Wan 中主要是首帧 latent 约束,在 LTX 中还要考虑音频/多阶段增强是否参与条件链路', s:'todo'},
+      ]},
+      {n:'代码 / 实验任务', items:[
+        {x:'[代码] 在 Wan2.2-Code 中定位 generate.py、wan/__init__.py、configs/wan_ti2v_5B.py,画出任务分发表', s:'todo'},
+        {x:'[代码] 为 LTX 记录最小推理命令或 ComfyUI workflow,明确输入文件、prompt、时长、输出格式', s:'todo'},
       ]},
     ]},
-    {t:'第 4 层 · 视频生成(图像 + 时序建模)', g:[
-      {n:'理论', items:[
-        {x:'时间注意力 — 在图像 DiT/U-Net 上插入跨帧注意力', s:'todo'},
-        {x:'3D VAE / 时空压缩 — 同时压缩空间与时间(CogVideoX 关键)', s:'todo'},
-        {x:'时空 DiT — 联合时空 patch 化,Sora 核心思想', s:'todo'},
-        {x:'运动一致性与时序连贯 — 闪烁、漂移及缓解', s:'todo'},
-        {x:'条件机制 — 文生视频 / 图生视频(I2V)/ 首尾帧控制', s:'todo'},
-        {x:'长视频生成 — 分段、自回归续帧、滑动窗口', s:'todo'},
+    {t:'第 2 层 · 文本与多模态条件编码', g:[
+      {n:'共性原理', items:[
+        {x:'[共性] 条件编码的目标是把自然语言、图像、音频等输入变成 DiT 可消费的 context token 或 latent 约束', s:'todo'},
+        {x:'[共性] cross-attention 负责注入语义条件,AdaLN/时间调制负责告诉模型当前去噪阶段', s:'todo'},
       ]},
-      {n:'模型(开源,可读代码)', items:[
-        {x:'CogVideoX — 开源文档全,第一个精读对象', s:'todo'},
-        {x:'Wan (万相) — 基于 Flow Matching,与理论方向一致 ★', s:'todo'},
-        {x:'HunyuanVideo — 大规模开源,工程参考价值高', s:'todo'},
-        {x:'Sora / 闭源技术报告 — 读思想,不求复现', s:'todo'},
+      {n:'Wan2.2 / TI2V-5B 细节', items:[
+        {x:'[Wan] UMT5-XXL 对 prompt 和 negative prompt 分别编码,context 作为 WanModel cross-attention 的 K/V', s:'todo'},
+        {x:'[Wan] t5_cpu、t5_fsdp、offload_model 是显存管理关键,需要理解编码器与 DiT 的设备切换', s:'todo'},
       ]},
-      {n:'代码', items:[
-        {x:'用 diffusers 跑通 CogVideoX 文生视频推理', s:'todo'},
-        {x:'读源码定位 3D VAE 与时空注意力实现位置', s:'todo'},
-        {x:'跑通图生视频 (I2V) pipeline,理解图像条件注入', s:'todo'},
-        {x:'(进阶)小数据集微调视频 LoRA 或时序模块改动', s:'todo'},
+      {n:'LTX 2.3 细节', items:[
+        {x:'[LTX] LTX 2.3 强调 gated attention text connector 和更强 prompt adherence,应重点记录文本连接器如何影响 timing、motion、expression', s:'todo'},
+        {x:'[LTX] 音视频联合模型需要让文本、视频 latent、音频 latent 在同一时间轴上对齐,关注 temporal RoPE 与跨模态连接', s:'todo'},
       ]},
-    ]},
-    {t:'第 5 层 · 生成质量评测', g:[
-      {n:'图像评测 · 理论', items:[
-        {x:'FID — 基于 Inception 特征的分布距离;注意对 resize/样本量敏感', s:'todo'},
-        {x:'IS — 早期指标,了解其已知缺陷', s:'todo'},
-        {x:'sFID / KID — FID 改进变体,KID 小样本更无偏', s:'todo'},
-        {x:'Precision & Recall — 保真度与多样性解耦', s:'todo'},
-        {x:'CLIP Score — 文图对齐度,文生图必备', s:'todo'},
-        {x:'LPIPS — 感知相似度,重建/编辑/一致性', s:'todo'},
-        {x:'PSNR / SSIM — 像素/结构保真,用于有 GT 任务', s:'todo'},
-        {x:'人工评测与偏好模型 — DrawBench/HPSv2/ImageReward/PickScore', s:'todo'},
-        {x:'指标陷阱 — 为何要多指标联合报告', s:'todo'},
+      {n:'对照问题', items:[
+        {x:'[对照] Wan 的文本条件主要服务视频语义,LTX 的文本条件还要约束音频事件和时序表达,条件负担不同', s:'todo'},
+        {x:'[对照] 为什么 prompt adherence 的改进可能来自文本连接器,而不是只增大 DiT 主干?', s:'todo'},
       ]},
-      {n:'视频评测 · 理论', items:[
-        {x:'FVD — 视频版 FID,基于 I3D 时空特征(最核心)', s:'todo'},
-        {x:'KVD — FVD 的 MMD 变体', s:'todo'},
-        {x:'时序一致性 — warp error、光流、帧间 CLIP 相似度', s:'todo'},
-        {x:'运动质量 — 运动幅度/平滑度、是否伪静止', s:'todo'},
-        {x:'VBench / EvalCrafter — 多维度综合 benchmark(事实标准)', s:'todo'},
-        {x:'逐帧图像指标 — 按帧聚合的做法及局限', s:'todo'},
-      ]},
-      {n:'评测方法论(通用)', items:[
-        {x:'评测协议规范 — 样本量/分辨率/seed/参考集(复现性)', s:'todo'},
-        {x:'公平对比原则 — 对齐 NFE、CFG scale、训练数据规模', s:'todo'},
-        {x:'自动指标 vs 人工评测 — 何时上 human eval', s:'todo'},
-        {x:'指标与体感的鸿沟 — FID 降了但肉眼更差', s:'todo'},
-      ]},
-      {n:'代码', items:[
-        {x:'用 pytorch-fid / clean-fid 计算 FID,验证 resize 影响', s:'todo'},
-        {x:'用 torchmetrics 跑通 FID/IS/KID/LPIPS', s:'todo'},
-        {x:'计算 CLIP Score 并对生成图排序', s:'todo'},
-        {x:'复现 Precision/Recall 曲线', s:'todo'},
-        {x:'用官方实现计算 FVD,理解 I3D 特征提取', s:'todo'},
-        {x:'跑通 VBench 部分维度', s:'todo'},
-        {x:'搭最小评测脚本:目录输入 → 多指标报告输出', s:'todo'},
+      {n:'代码 / 实验任务', items:[
+        {x:'[代码] 阅读 wan/modules/t5.py 与 tokenizers.py,追踪 prompt → context tensor 的形状和 dtype', s:'todo'},
+        {x:'[代码] 设计 3 个 prompt 对照:动作时序、表情变化、声音事件,比较 Wan 和 LTX 的条件跟随能力', s:'todo'},
       ]},
     ]},
-    {t:'配套资源', g:[
-      {n:'必读论文(精读)', items:[
-        {x:'DDPM (Ho et al., 2020)', s:'todo'},
-        {x:'DDIM (Song et al., 2020)', s:'todo'},
-        {x:'Score-based SDE (Song et al., 2021)', s:'todo'},
-        {x:'Classifier-Free Guidance (Ho & Salimans, 2022)', s:'todo'},
-        {x:'LDM / Stable Diffusion (Rombach et al., 2022)', s:'todo'},
-        {x:'DiT (Peebles & Xie, 2023)', s:'todo'},
-        {x:'Flow Matching (Lipman et al., 2023)', s:'done'},
-        {x:'Rectified Flow (Liu et al., 2023)', s:'todo'},
-        {x:'SD3 (Esser et al., 2024)', s:'todo'},
-        {x:'CogVideoX / Sora 技术报告', s:'todo'},
-        {x:'FID / Precision-Recall 评测论文', s:'todo'},
-        {x:'FVD / VBench (Huang et al., 2024)', s:'todo'},
+    {t:'第 3 层 · VAE / Tokenizer / Latent 空间', g:[
+      {n:'共性原理', items:[
+        {x:'[共性] 视频 VAE 决定像素到 latent 的压缩率、token 数和细节上限,是速度与清晰度权衡的核心', s:'todo'},
+        {x:'[共性] spatial/temporal compression 越激进,DiT 越快,但 decoder 需要承担更多细节重建压力', s:'todo'},
       ]},
-      {n:'必用代码库', items:[
-        {x:'huggingface/diffusers — 主力推理与微调框架', s:'todo'},
-        {x:'huggingface/transformers — 文本编码器、CLIP', s:'todo'},
-        {x:'lucidrains 系列 — 读最小实现学架构', s:'todo'},
-        {x:'各模型官方仓库(CogVideoX / FLUX / Wan)', s:'todo'},
-        {x:'pytorch-fid / clean-fid — FID 计算', s:'todo'},
-        {x:'torchmetrics — FID/IS/KID/LPIPS 一站式', s:'todo'},
-        {x:'VBench — 视频生成综合评测', s:'todo'},
+      {n:'Wan2.2 / TI2V-5B 细节', items:[
+        {x:'[Wan] VAE 2.2 使用 stride 4×16×16,TI2V-5B 的 in_dim/out_dim=48 来自 VAE latent channel', s:'todo'},
+        {x:'[Wan] i2v 模式先把首帧 VAE encode 成 z,再用 mask 在每一步去噪后把首帧 latent 钉回去', s:'todo'},
+      ]},
+      {n:'LTX 2.3 细节', items:[
+        {x:'[LTX] LTX-Video 路线强调 1:192 高压缩和 32×32×8 每 token 的时空下采样,把 patchify 前移到 VAE 编码侧', s:'todo'},
+        {x:'[LTX] LTX 2.3 重建 latent space 与更新 VAE,目标是改善细纹理、头发、文字和边缘细节', s:'todo'},
+      ]},
+      {n:'对照问题', items:[
+        {x:'[对照] Wan 用高压缩 VAE 让 5B DiT 跑 720p/5 秒,LTX 用更整体的 VAE-transformer 协同追求实时和细节恢复', s:'todo'},
+        {x:'[对照] 当细节丢失时,应该优先检查 VAE 重建、latent token 数、decoder 责任还是 upscaler?', s:'todo'},
+      ]},
+      {n:'代码 / 实验任务', items:[
+        {x:'[代码] 在 wan/modules/vae2_2.py 中定位 encode/decode,记录输入视频与 latent 的形状变化', s:'todo'},
+        {x:'[代码] 对同一短视频做 VAE 重建实验,比较重建误差、细节丢失位置和时序稳定性', s:'todo'},
       ]},
     ]},
-    {t:'里程碑检查点', g:[
-      {n:'掌握标准', items:[
-        {x:'M1 不看教程从零写出可训练的 DDPM', s:'todo'},
-        {x:'M2 写出 Rectified Flow 并解释与 DDPM 训练目标差异', s:'todo'},
-        {x:'M3 用自己数据训练 LoRA + ControlNet 做可控生成', s:'todo'},
-        {x:'M4 读懂开源视频模型,指出其时序建模实现', s:'todo'},
-        {x:'M5 独立跑通并微调图生视频 pipeline', s:'todo'},
-        {x:'M6 为自己模型搭多指标评测流程并解释指标含义', s:'todo'},
+    {t:'第 4 层 · DiT / Transformer 主干', g:[
+      {n:'共性原理', items:[
+        {x:'[共性] DiT 在 latent token 上预测噪声或 velocity,self-attention 建模时空关系,cross-attention 注入条件', s:'todo'},
+        {x:'[共性] 位置编码、patch/token 组织、归一化调制和 attention 实现决定模型如何理解空间、时间和条件', s:'todo'},
+      ]},
+      {n:'Wan2.2 / TI2V-5B 细节', items:[
+        {x:'[Wan] WanModel 由 patch_embedding、text_embedding、time_embedding、30 层 block 和 head/unpatchify 组成', s:'todo'},
+        {x:'[Wan] 每个 WanAttentionBlock 包含 self-attention、cross-attention、FFN,AdaLN-Zero 由 timestep 产生 6 路调制', s:'todo'},
+        {x:'[Wan] 逐 token 时间步是 TI2V 关键:首帧 token 可为 t=0,其余视频 token 为待去噪时间步', s:'todo'},
+      ]},
+      {n:'LTX 2.3 细节', items:[
+        {x:'[LTX] LTX 音视频模型采用非对称双流 DiT:视频流承载复杂时空动态,音频流处理 1D 时间信号', s:'todo'},
+        {x:'[LTX] 每个双流 block 关注 self-attention、text cross-attention、audio-video cross-attention 和 FFN 的顺序', s:'todo'},
+        {x:'[LTX] 视频侧关注 3D RoPE,音频侧关注 1D temporal RoPE,跨模态对齐依赖共享时间轴', s:'todo'},
+      ]},
+      {n:'对照问题', items:[
+        {x:'[对照] Wan 的单一视频 DiT 更适合理解视频生成主干,LTX 的双流结构更适合理解音视频同步和参数分配', s:'todo'},
+        {x:'[对照] 同样是 cross-attention,Wan 是文本到视频,LTX 还包含音频和视频之间的双向信息交换', s:'todo'},
+      ]},
+      {n:'代码 / 实验任务', items:[
+        {x:'[代码] 在 wan/modules/model.py 追踪 x、t、context 进入 WanModel.forward() 后的形状变化', s:'todo'},
+        {x:'[代码] 用伪代码画出 LTX dual-stream block:video_self → text_cross → av_cross → ffn 与 audio 对称流', s:'todo'},
+      ]},
+    ]},
+    {t:'第 5 层 · 去噪循环、Scheduler 与 Guidance', g:[
+      {n:'共性原理', items:[
+        {x:'[共性] 扩散/Flow Matching 推理就是从噪声 latent 沿时间步逐步更新到干净 latent,步数直接影响速度和质量', s:'todo'},
+        {x:'[共性] CFG 用 cond 与 uncond 差值外推条件强度,蒸馏模型则用更少步数换取更快推理', s:'todo'},
+      ]},
+      {n:'Wan2.2 / TI2V-5B 细节', items:[
+        {x:'[Wan] TI2V-5B 默认 50 步,每步 DiT 跑 cond/uncond 两次,再由 UniPC Scheduler.step() 更新 latent', s:'todo'},
+        {x:'[Wan] guide_scale 越大越贴 prompt,但可能带来过饱和、运动僵硬或细节异常', s:'todo'},
+      ]},
+      {n:'LTX 2.3 细节', items:[
+        {x:'[LTX] LTX 2.3 提供 dev、distilled、fp8、LoRA distilled 等版本,distilled 常见 8 步 CFG=1 用于快速推理', s:'todo'},
+        {x:'[LTX] 记录 Pro Flow 与快速 flow 的差异:稳定性、细节、耗时、可训练性和本地部署成本', s:'todo'},
+      ]},
+      {n:'对照问题', items:[
+        {x:'[对照] Wan 的瓶颈主要来自步数 × CFG 双前向 × DiT 规模,LTX 的速度策略更多依赖蒸馏和多阶段工程化组件', s:'todo'},
+        {x:'[对照] 减少步数、降低 CFG、量化、蒸馏和 upscaler 分阶段,分别牺牲哪类质量?', s:'todo'},
+      ]},
+      {n:'代码 / 实验任务', items:[
+        {x:'[代码] 对 Wan 做 steps=10/25/50 与 guide_scale=3/5/7 的网格实验,记录速度、稳定性、prompt 对齐', s:'todo'},
+        {x:'[代码] 对 LTX dev 与 distilled 工作流做同 prompt 对照,记录 NFE、显存、耗时、画质和音频同步', s:'todo'},
+      ]},
+    ]},
+    {t:'第 6 层 · 解码、上采样与输出质量', g:[
+      {n:'共性原理', items:[
+        {x:'[共性] 去噪结束只得到 latent,最终观感还取决于 VAE decoder、空间/时间上采样、后处理和视频编码', s:'todo'},
+        {x:'[共性] 常见问题包括细节糊、文字崩、边缘抖动、闪烁、运动漂移、音画不同步和长时程不稳定', s:'todo'},
+      ]},
+      {n:'Wan2.2 / TI2V-5B 细节', items:[
+        {x:'[Wan] VAE Decoder 把 latent 还原为像素视频,再保存 mp4;需要记录输出张量形状、fps、颜色空间和保存参数', s:'todo'},
+        {x:'[Wan] 长视频和高分辨率质量主要受 latent 尺寸、采样步数、VAE 细节恢复和显存策略共同影响', s:'todo'},
+      ]},
+      {n:'LTX 2.3 细节', items:[
+        {x:'[LTX] LTX 2.3 提供 spatial upscaler x1.5/x2 与 temporal upscaler x2,适合拆成 base generation → upscale 的多阶段链路', s:'todo'},
+        {x:'[LTX] LTX-Video 的 decoder final denoise 思想:decoder 不只是还原像素,还承担最后去噪与细节恢复责任', s:'todo'},
+      ]},
+      {n:'对照问题', items:[
+        {x:'[对照] Wan 更像一次主模型生成后直接 decode,LTX 更强调多阶段增强和产品级输出规格,两者输出链路复杂度不同', s:'todo'},
+        {x:'[对照] 如果目标是在线浏览 demo,应该优先追求快速预览、高清输出还是长视频稳定?', s:'todo'},
+      ]},
+      {n:'代码 / 实验任务', items:[
+        {x:'[代码] 为 Wan 记录 decode 后的视频 shape、文件大小、fps 和肉眼问题清单', s:'todo'},
+        {x:'[代码] 为 LTX 设计 base/空间上采样/时间上采样三阶段对照表,确认每阶段输入输出 latent 或视频格式', s:'todo'},
+      ]},
+    ]},
+    {t:'第 7 层 · 训练、微调、评测与复现里程碑', g:[
+      {n:'共性原理', items:[
+        {x:'[共性] 训练关注数据分布、caption 质量、分辨率帧率采样、loss 目标、显存策略和 checkpoint 评估', s:'todo'},
+        {x:'[共性] 评测需要同时看 prompt adherence、运动质量、时序一致性、细节稳定、音画同步和人工偏好', s:'todo'},
+      ]},
+      {n:'Wan2.2 / TI2V-5B 细节', items:[
+        {x:'[Wan] 复现目标 M1:不看文档说清 TI2V-5B 从 prompt 到 mp4 的完整调用链和关键张量形状', s:'todo'},
+        {x:'[Wan] 复现目标 M2:能解释 A14B MoE 双 DiT 与 TI2V-5B 单稠密 DiT 的任务和复杂度差异', s:'todo'},
+      ]},
+      {n:'LTX 2.3 细节', items:[
+        {x:'[LTX] 复现目标 M3:跑通 LTX 2.3 dev/distilled 至少一个工作流,并解释 22B、distilled、fp8、LoRA、upscaler 的用途', s:'todo'},
+        {x:'[LTX] 复现目标 M4:能说明 LTX 2.3 新 VAE、text connector、vocoder/audio 和 portrait/HDR 改进分别解决什么问题', s:'todo'},
+      ]},
+      {n:'对照问题', items:[
+        {x:'[对照] 做研究时优先学 Wan 的源码清晰度,做产品 demo 时优先学 LTX 的速度、音视频和多阶段输出,如何取舍?', s:'todo'},
+        {x:'[对照] 如果要微调一个具体风格或主体,两者的 LoRA/latent space/版本迁移成本分别在哪里?', s:'todo'},
+      ]},
+      {n:'代码 / 实验任务', items:[
+        {x:'[代码] 建立统一评测表:prompt、seed、分辨率、帧数、FPS、步数、CFG、显存、耗时、失败现象、主观评分', s:'todo'},
+        {x:'[代码] 跑 VBench/FVD 或轻量人工评测子集,至少比较 Wan 与 LTX 在文本对齐、运动、时序稳定和音画同步上的差异', s:'todo'},
+        {x:'[代码] 最终产出一张 Wan vs LTX 架构对照图和一份源码阅读索引,作为下一轮学习入口', s:'todo'},
       ]},
     ]},
   ];
@@ -386,11 +411,6 @@ function uid(){ return Math.random().toString(36).slice(2,9); }
 let data = load();
 function load(){
   try{ const r=localStorage.getItem(STORAGE_KEY); if(r) return JSON.parse(r); }catch(e){}
-  // migrate from v1 (preserve states), else default
-  try{
-    const old=localStorage.getItem(OLD_KEY);
-    if(old){ const od=JSON.parse(old); if(Array.isArray(od)&&od.length) return od; }
-  }catch(e){}
   return defaultData();
 }
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
@@ -567,7 +587,7 @@ function expandAll(open){ data.forEach(s=>s.collapsed=!open); save(); render(); 
 function addSection(){ data.push({t:'新能力层',g:[{n:'新分组',items:[]}]}); save(); render(); }
 
 function exportMarkdown(){
-  let md='# 图像 / 视频生成 · 能力树\n\n';
+  let md='# Wan + LTX 视频生成串联能力树\n\n';
   data.forEach(s=>{
     md+=`## ${s.t}\n\n`;
     if(s.note) md+=`> 备注:${s.note}\n\n`;
@@ -583,16 +603,16 @@ function exportMarkdown(){
       md+='\n';
     });
   });
-  download(md,'能力树.md','text/markdown');
+  download(md,'Wan-LTX-视频生成串联能力树.md','text/markdown');
 }
-function exportJSON(){ download(JSON.stringify(data,null,2),'能力树.json','application/json'); }
+function exportJSON(){ download(JSON.stringify(data,null,2),'Wan-LTX-视频生成串联能力树.json','application/json'); }
 function importJSON(){ document.getElementById('fileInput').click(); }
 document.getElementById('fileInput').onchange=e=>{
   const f=e.target.files[0]; if(!f)return; const r=new FileReader();
   r.onload=()=>{ try{ data=JSON.parse(r.result); save(); render(); alert('导入成功'); }catch(err){ alert('JSON 解析失败:'+err.message); } };
   r.readAsText(f); e.target.value='';
 };
-function resetAll(){ if(confirm('恢复到默认能力树?当前所有改动(含备注)将丢失。')){ data=defaultData(); save(); render(); } }
+function resetAll(){ if(confirm('恢复到 Wan + LTX 串联能力树默认结构?当前所有改动(含备注)将丢失。')){ data=defaultData(); save(); render(); } }
 function download(content,name,type){
   const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
