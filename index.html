@@ -7,7 +7,7 @@
 <style>
   :root{
     --bg:#f4f3ef; --panel:#fffefa; --ink:#222019; --muted:#746f66; --line:#e4ded2;
-    --accent:#5b51c9; --accent2:#1f6f78; --accent3:#4ea1ff; --soft:#edebfb;
+    --accent:#5b51c9; --accent3:#4ea1ff; --soft:#edebfb;
     --shadow:0 12px 34px rgba(36,30,16,.08); --r:18px; --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
   }
   *{box-sizing:border-box}
@@ -21,13 +21,12 @@
   .eyebrow{font-size:12px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;font-weight:700}
   h1{font-size:clamp(28px,5vw,46px);line-height:1.12;margin:0;letter-spacing:-.8px}
   header p{max-width:760px;margin:0;color:var(--muted);font-size:15px}
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
   .card{position:relative;display:flex;flex-direction:column;min-height:260px;padding:22px;background:rgba(255,254,250,.86);
     border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);text-decoration:none;color:inherit;overflow:hidden;transition:.18s ease}
   .card:hover{transform:translateY(-3px);border-color:#cfc7ba;box-shadow:0 16px 42px rgba(36,30,16,.12)}
   .card:focus-visible{outline:3px solid rgba(91,81,201,.28);outline-offset:3px}
   .card:before{content:"";position:absolute;inset:0 0 auto;height:5px;background:var(--accent)}
-  .card.teal:before{background:var(--accent2)}
   .card.blue:before{background:var(--accent3)}
   .tag{width:max-content;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--muted);background:#fff}
   h2{font-size:22px;line-height:1.25;margin:18px 0 10px}
@@ -35,7 +34,6 @@
   .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
   .pill{font-size:12px;color:#5e594f;background:#f0eee8;border-radius:999px;padding:4px 9px}
   .open{margin-top:auto;padding-top:24px;color:var(--accent);font-weight:700;font-size:14px}
-  .teal .open{color:var(--accent2)}
   .blue .open{color:var(--accent3)}
   footer{margin-top:24px;padding:16px 18px;border:1px dashed var(--line);border-radius:14px;color:var(--muted);font-size:13px;background:rgba(255,254,250,.55)}
   code{font-family:"SF Mono",Consolas,monospace;font-size:.95em}
@@ -47,7 +45,7 @@
     <header>
       <div class="eyebrow">Video Gen Tree</div>
       <h1>图像与视频生成学习导航</h1>
-      <p>这里汇总当前仓库中的 HTML 学习页面。点击卡片即可在线浏览能力树、Wan2.2 视频生成梳理，以及 Wan2.2 代码学习文档。</p>
+      <p>这里汇总当前仓库中的 HTML 学习页面。点击卡片即可在线浏览图像 / 视频生成能力树，以及 Wan2.2 代码学习文档。</p>
     </header>
 
     <main class="grid" aria-label="学习页面导航">
@@ -59,18 +57,6 @@
           <span class="pill">图像生成</span>
           <span class="pill">视频生成</span>
           <span class="pill">学习路线</span>
-        </div>
-        <div class="open">打开页面 →</div>
-      </a>
-
-      <a class="card teal" href="Wan2.2-视频生成能力树.html">
-        <span class="tag">Wan2.2</span>
-        <h2>Wan2.2 · 视频生成技术能力树</h2>
-        <p>围绕 Wan2.2 的视频生成能力、关键模块和理解路径，形成更聚焦的技术能力树。</p>
-        <div class="meta">
-          <span class="pill">视频模型</span>
-          <span class="pill">Wan2.2</span>
-          <span class="pill">能力拆解</span>
         </div>
         <div class="open">打开页面 →</div>
       </a>
