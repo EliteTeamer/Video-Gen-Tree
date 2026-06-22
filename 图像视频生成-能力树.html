@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图像 / 视频生成 · 能力树</title>
+<style>
+  :root{
+    --bg:#f4f3ef; --panel:#ffffff; --ink:#222019; --muted:#777469; --faint:#9b988e; --line:#e6e2d9;
+    --accent:#5b51c9; --accent-soft:#edebfb; --accent-deep:#473ea8;
+    --done:#1d9e75; --done-soft:#e2f6ef; --done-line:#7fd3b7;
+    --prog:#c47d10; --prog-soft:#fbf0d9; --prog-line:#e9c277;
+    --todo:#8a887f; --todo-soft:#efede6;
+    --danger:#df4a48;
+    --note:#caa23a; --note-soft:#fbf4df;
+    --r:14px; --r-sm:9px;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    --tree:#d8d4c9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:
+      radial-gradient(1200px 500px at 80% -10%, #ecebfa 0%, rgba(236,235,250,0) 55%),
+      var(--bg);
+    color:var(--ink);line-height:1.6;padding:30px 18px 90px}
+  .wrap{max-width:1060px;margin:0 auto}
+
+  header h1{font-size:23px;font-weight:600;letter-spacing:-.3px;display:flex;align-items:center;gap:10px}
+  header h1 .leaf{width:24px;height:24px;color:var(--accent)}
+  header p{color:var(--muted);font-size:13px;margin-top:7px;max-width:760px}
+
+  .bar{position:sticky;top:0;z-index:30;padding:14px 0 10px;margin-top:18px;
+    background:linear-gradient(var(--bg) 78%, rgba(244,243,239,0))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+    padding:16px 18px;box-shadow:0 1px 2px rgba(30,25,10,.03),0 6px 22px rgba(30,25,10,.04)}
+  .ptop{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .ring{position:relative;width:58px;height:58px;flex:0 0 58px}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .pctlabel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:600;color:var(--accent-deep)}
+  .pmeta{flex:1;min-width:200px}
+  .pmeta .sum{font-size:13px;color:var(--muted)}
+  .pmeta .sum b{color:var(--ink);font-weight:600}
+  .track{height:7px;border-radius:6px;background:var(--todo-soft);margin-top:9px;overflow:hidden;display:flex}
+  .track .sd{background:var(--done);transition:width .35s}
+  .track .sp{background:var(--prog);transition:width .35s}
+
+  .row2{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;
+    padding-top:14px;border-top:1px solid var(--line)}
+  .filters{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{font-family:var(--sans);font-size:12.5px;border:1px solid var(--line);background:var(--panel);
+    color:var(--muted);padding:6px 13px;border-radius:30px;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:6px}
+  .chip:hover{border-color:#cdc9bd}
+  .chip i{width:9px;height:9px;border-radius:50%}
+  .chip.on{color:#fff;border-color:transparent}
+  .chip.on.all{background:var(--accent)}
+  .chip.on.todo{background:var(--todo)}
+  .chip.on.prog{background:var(--prog)}
+  .chip.on.done{background:var(--done)}
+  .chip .cnt{font-size:11px;opacity:.7}
+  .spacer{flex:1}
+  .search{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:30px;
+    padding:6px 13px;background:var(--panel)}
+  .search input{border:none;outline:none;font-family:var(--sans);font-size:13px;background:transparent;width:150px;color:var(--ink)}
+  .search svg{width:14px;height:14px;color:var(--faint)}
+
+  .toolbar{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+  button{font-family:var(--sans);font-size:12.5px;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+    padding:6px 12px;border-radius:var(--r-sm);cursor:pointer;transition:.15s}
+  button:hover{border-color:#cdc9bd;background:#fafaf7}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.primary:hover{background:var(--accent-deep)}
+
+  /* ---------- TREE ---------- */
+  #tree{margin-top:14px}
+  .layer{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-top:14px;
+    overflow:hidden;box-shadow:0 1px 2px rgba(30,25,10,.03)}
+  .layer-head{display:flex;align-items:center;gap:11px;padding:15px 18px;cursor:pointer;user-select:none;
+    border-left:4px solid var(--accent)}
+  .layer-head:hover{background:#fafaf8}
+  .caret{width:17px;height:17px;flex:0 0 17px;transition:transform .2s;color:var(--faint)}
+  .collapsed .caret{transform:rotate(-90deg)}
+  .layer-title{font-size:15.5px;font-weight:600;flex:1;outline:none;border-radius:5px;padding:1px 4px}
+  .layer-title:focus{background:var(--accent-soft)}
+  .mini-bar{width:90px;height:6px;border-radius:5px;background:var(--todo-soft);overflow:hidden;display:flex;flex:0 0 90px}
+  .mini-bar .d{background:var(--done)}.mini-bar .p{background:var(--prog)}
+  .layer-count{font-size:11.5px;color:var(--muted);background:var(--todo-soft);padding:2px 9px;border-radius:20px;flex:0 0 auto}
+  .icon-btn{flex:0 0 auto;border:none;background:transparent;padding:3px;border-radius:6px;cursor:pointer;
+    color:var(--faint);display:inline-flex}
+  .icon-btn:hover{background:var(--todo-soft);color:var(--ink)}
+  .icon-btn svg{width:15px;height:15px}
+
+  .layer-body{padding:6px 18px 16px 20px}
+  .collapsed .layer-body{display:none}
+
+  /* note block */
+  .note{margin:6px 0 4px;background:var(--note-soft);border:1px solid #efe2b8;border-radius:var(--r-sm);
+    padding:8px 11px;font-size:12.5px;color:#6b5a22;display:flex;gap:8px;align-items:flex-start}
+  .note svg{width:14px;height:14px;flex:0 0 14px;margin-top:3px;color:var(--note)}
+  .note .ntxt{flex:1;outline:none;white-space:pre-wrap;border-radius:4px;padding:1px 3px;min-height:20px}
+  .note .ntxt:empty:before{content:'写点备注…(回车保存)';color:#b9a55f}
+  .note .ntxt:focus{background:#fffdf4}
+  .note .nclose{cursor:pointer;color:#c6b677;font-size:14px;line-height:1}
+  .note .nclose:hover{color:var(--danger)}
+
+  /* group: tree branch */
+  .group{position:relative;margin-left:8px;padding-left:22px}
+  .group:before{content:'';position:absolute;left:6px;top:0;bottom:14px;width:2px;background:var(--tree)}
+  .grp-head{position:relative;display:flex;align-items:center;gap:8px;padding:8px 0 6px;margin-top:6px}
+  .grp-head:before{content:'';position:absolute;left:-16px;top:50%;width:14px;height:2px;background:var(--tree)}
+  .grp-dot{width:10px;height:10px;border-radius:3px;background:var(--accent-soft);border:2px solid var(--accent);flex:0 0 auto}
+  .gname{font-size:13.5px;font-weight:600;color:var(--accent-deep);outline:none;border-radius:5px;padding:1px 4px}
+  .gname:focus{background:var(--accent-soft)}
+  .grp-actions{display:flex;gap:2px;opacity:0;transition:.15s}
+  .grp-head:hover .grp-actions{opacity:1}
+
+  /* item: tree leaf */
+  .item{position:relative;display:flex;align-items:flex-start;gap:10px;padding:6px 8px 6px 0;border-radius:var(--r-sm)}
+  .item:before{content:'';position:absolute;left:-16px;top:18px;width:14px;height:2px;background:var(--tree)}
+  .item:hover{background:#fafaf8}
+  .item.hide{display:none}
+  .dot{flex:0 0 auto;margin-top:1px;width:21px;height:21px;border-radius:7px;border:1.5px solid #cfccc2;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;transition:.15s;background:#fff}
+  .dot:hover{transform:scale(1.08)}
+  .dot.prog{background:var(--prog);border-color:var(--prog)}
+  .dot.done{background:var(--done);border-color:var(--done)}
+  .itxt{flex:1;font-size:13.5px;cursor:text;outline:none;border-radius:5px;padding:1px 4px;min-height:22px}
+  .itxt:focus{background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent-soft)}
+  .item.done .itxt{color:var(--faint);text-decoration:line-through;text-decoration-color:#c7c4ba}
+  .badge{flex:0 0 auto;font-size:11px;padding:1px 9px;border-radius:20px;margin-top:2px;white-space:nowrap}
+  .badge.todo{background:var(--todo-soft);color:var(--todo)}
+  .badge.prog{background:var(--prog-soft);color:var(--prog)}
+  .badge.done{background:var(--done-soft);color:var(--done)}
+  .item-actions{display:flex;gap:1px;opacity:0;transition:.15s}
+  .item:hover .item-actions{opacity:1}
+  .item-actions .icon-btn svg{width:14px;height:14px}
+
+  .leaf-note{position:relative;margin:2px 0 6px 31px;background:var(--note-soft);border:1px solid #efe2b8;
+    border-radius:var(--r-sm);padding:6px 10px;font-size:12px;color:#6b5a22;display:flex;gap:7px}
+  .leaf-note:before{content:'';position:absolute;left:-16px;top:-6px;bottom:50%;width:2px;background:var(--tree)}
+  .leaf-note svg{width:13px;height:13px;flex:0 0 13px;margin-top:2px;color:var(--note)}
+  .leaf-note .ntxt{flex:1;outline:none;white-space:pre-wrap;min-height:18px}
+  .leaf-note .ntxt:empty:before{content:'备注…';color:#b9a55f}
+  .leaf-note .nclose{cursor:pointer;color:#c6b677;font-size:13px}
+  .leaf-note .nclose:hover{color:var(--danger)}
+
+  .grp-tools{display:flex;gap:7px;margin:8px 0 2px}
+  .ghost{font-size:12px;color:var(--muted);border-style:dashed;padding:5px 11px}
+  .layer-tools{display:flex;gap:7px;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+  .add-layer{width:100%;margin-top:16px;border-style:dashed;color:var(--muted);padding:13px;font-size:13px}
+  .empty{font-size:12.5px;color:var(--faint);padding:16px 0;text-align:center}
+  footer{text-align:center;color:var(--faint);font-size:12px;margin-top:34px;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>
+      <svg class="leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>
+      图像 / 视频生成 · 能力树
+    </h1>
+    <p>树状层级:能力层 → 子分组 → 能力点。点击方块循环状态,双击文字编辑,每一层级都可加备注,顶部支持按状态筛选与搜索。所有改动自动保存在本浏览器。</p>
+  </header>
+
+  <div class="bar">
+    <div class="card">
+      <div class="ptop">
+        <div class="ring">
+          <svg width="58" height="58">
+            <circle cx="29" cy="29" r="24" fill="none" stroke="#ececec" stroke-width="7"/>
+            <circle id="ringProg" cx="29" cy="29" r="24" fill="none" stroke="var(--accent)" stroke-width="7"
+              stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+          </svg>
+          <div class="pctlabel" id="pct">0%</div>
+        </div>
+        <div class="pmeta">
+          <div class="sum" id="summary">共 0 项</div>
+          <div class="track"><div class="sd" id="segDone" style="width:0"></div><div class="sp" id="segProg" style="width:0"></div></div>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="filters" id="filters"></div>
+        <div class="spacer"></div>
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="searchInput" placeholder="搜索能力…" oninput="render()">
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <button class="primary" onclick="expandAll(true)">全部展开</button>
+        <button onclick="expandAll(false)">全部折叠</button>
+        <button onclick="exportMarkdown()">导出 Markdown</button>
+        <button onclick="exportJSON()">导出 JSON</button>
+        <button onclick="importJSON()">导入 JSON</button>
+        <button onclick="resetAll()">恢复默认</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tree"></div>
+  <button class="add-layer" onclick="addSection()">+ 添加新的能力层</button>
+
+  <footer>
+    数据存储于本浏览器 localStorage,换设备 / 清缓存前请用「导出 JSON」备份<br>
+    单文件离线可用 · 无需联网
+  </footer>
+</div>
+<input type="file" id="fileInput" accept=".json" style="display:none">
+
+<script>
+const STORAGE_KEY = 'gen-skill-tree-v2';
+const OLD_KEY = 'gen-skill-tree-v1';
+const STATES = ['todo','prog','done'];
+const STATE_LABEL = {todo:'未开始', prog:'进行中', done:'已完成'};
+const STATE_MARK = {todo:'', prog:'~', done:'✓'};
+let activeFilter = 'all';
+
+const ICONS = {
+  note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 9 9l-7 .5 5.5 4.5L5.5 21 12 17l6.5 4-1.5-7L22 9.5 15 9z"/></svg>'
+};
+
+function defaultData(){
+  return [
+    {t:'第 1 层 · 核心网络架构', g:[
+      {n:'理论', items:[
+        {x:'U-Net — 编码器-解码器 + skip connection,扩散早期主干', s:'done'},
+        {x:'Transformer / Attention — self / cross-attention、位置编码', s:'done'},
+        {x:'DiT (Diffusion Transformer) — Transformer 替代 U-Net,重点 AdaLN-Zero 条件注入', s:'todo'},
+        {x:'VAE / 自编码器 — 像素 → 潜空间压缩,latent diffusion 基础', s:'todo'},
+        {x:'VQ-VAE / Tokenizer — 离散化 latent,自回归路线基础', s:'todo'},
+        {x:'CLIP / 文本编码器 — 文图对齐;了解 T5 在 SD3/FLUX 中的角色', s:'done'},
+      ]},
+      {n:'代码', items:[
+        {x:'手写最小 U-Net(带 time embedding 注入)', s:'todo'},
+        {x:'手写最小 DiT block(patchify + AdaLN + attention)', s:'todo'},
+        {x:'用 diffusers 单独跑通 VAE 的 encode/decode', s:'todo'},
+        {x:'用 transformers 调 CLIP,提取 embedding 算相似度', s:'todo'},
+      ]},
+    ]},
+    {t:'第 2 层 · 生成模型理论(按顺序学)', g:[
+      {n:'理论', items:[
+        {x:'VAE / GAN(快速过)— 理解局限,知道为何被扩散取代', s:'todo'},
+        {x:'DDPM — 前向加噪/反向去噪、变分下界、ε-prediction', s:'done'},
+        {x:'DDIM — 确定性采样、加速、与 ODE 的联系', s:'todo'},
+        {x:'Score-based / SDE 统一框架 — 把 DDPM/SMLD 统一为 SDE', s:'todo'},
+        {x:'Classifier-Free Guidance (CFG) — 条件生成核心,务必推导', s:'todo'},
+        {x:'Flow Matching — 连续归一化流回归式训练,SD3/FLUX 核心', s:'done'},
+        {x:'Rectified Flow ★ — 直线化 ODE、reflow、少步采样(主攻方向)', s:'prog'},
+        {x:'自回归生成 (AR) — VAR / MAR 等新路线,作为扩散对照', s:'todo'},
+      ]},
+      {n:'代码', items:[
+        {x:'从零手写 DDPM(MNIST/CIFAR,约 200 行)训练+采样', s:'todo'},
+        {x:'从零手写 DDIM 采样器,对比步数与质量', s:'todo'},
+        {x:'从零手写 Rectified Flow(MNIST)', s:'todo'},
+        {x:'实现 CFG,对比 guidance scale 影响', s:'todo'},
+        {x:'读 diffusers scheduler 源码,对照理论核对公式', s:'todo'},
+      ]},
+    ]},
+    {t:'第 3 层 · 图像生成实战', g:[
+      {n:'模型与生态', items:[
+        {x:'Stable Diffusion 1.5 / SDXL — 经典 latent diffusion', s:'todo'},
+        {x:'SD3 / FLUX — Flow Matching + DiT 新一代,重点研究', s:'todo'},
+        {x:'熟练使用 HuggingFace diffusers 的组件拆装', s:'todo'},
+      ]},
+      {n:'可控与微调', items:[
+        {x:'LoRA — 低秩微调,显存友好,必会', s:'todo'},
+        {x:'DreamBooth / Textual Inversion — 概念注入、个性化', s:'todo'},
+        {x:'ControlNet / T2I-Adapter — 结构可控(边缘/深度/姿态)', s:'todo'},
+        {x:'IP-Adapter — 图像提示、风格/主体保持', s:'todo'},
+        {x:'Inpainting / Outpainting — 局部重绘', s:'todo'},
+      ]},
+      {n:'采样与加速', items:[
+        {x:'采样器对比 — Euler / DPM-Solver++ / UniPC', s:'todo'},
+        {x:'蒸馏加速 — LCM / Turbo / Lightning', s:'todo'},
+        {x:'量化与显存优化 — fp16/bf16、attention slicing、offload', s:'todo'},
+      ]},
+      {n:'代码', items:[
+        {x:'用 diffusers 跑通 SDXL / FLUX 文生图', s:'todo'},
+        {x:'用自己数据训练一个 LoRA 并加载推理', s:'todo'},
+        {x:'接入 ControlNet(canny/depth)实现可控生成', s:'todo'},
+        {x:'对比 LCM/Turbo 蒸馏模型的速度-质量权衡', s:'todo'},
+      ]},
+    ]},
+    {t:'第 4 层 · 视频生成(图像 + 时序建模)', g:[
+      {n:'理论', items:[
+        {x:'时间注意力 — 在图像 DiT/U-Net 上插入跨帧注意力', s:'todo'},
+        {x:'3D VAE / 时空压缩 — 同时压缩空间与时间(CogVideoX 关键)', s:'todo'},
+        {x:'时空 DiT — 联合时空 patch 化,Sora 核心思想', s:'todo'},
+        {x:'运动一致性与时序连贯 — 闪烁、漂移及缓解', s:'todo'},
+        {x:'条件机制 — 文生视频 / 图生视频(I2V)/ 首尾帧控制', s:'todo'},
+        {x:'长视频生成 — 分段、自回归续帧、滑动窗口', s:'todo'},
+      ]},
+      {n:'模型(开源,可读代码)', items:[
+        {x:'CogVideoX — 开源文档全,第一个精读对象', s:'todo'},
+        {x:'Wan (万相) — 基于 Flow Matching,与理论方向一致 ★', s:'todo'},
+        {x:'HunyuanVideo — 大规模开源,工程参考价值高', s:'todo'},
+        {x:'Sora / 闭源技术报告 — 读思想,不求复现', s:'todo'},
+      ]},
+      {n:'代码', items:[
+        {x:'用 diffusers 跑通 CogVideoX 文生视频推理', s:'todo'},
+        {x:'读源码定位 3D VAE 与时空注意力实现位置', s:'todo'},
+        {x:'跑通图生视频 (I2V) pipeline,理解图像条件注入', s:'todo'},
+        {x:'(进阶)小数据集微调视频 LoRA 或时序模块改动', s:'todo'},
+      ]},
+    ]},
+    {t:'第 5 层 · 生成质量评测', g:[
+      {n:'图像评测 · 理论', items:[
+        {x:'FID — 基于 Inception 特征的分布距离;注意对 resize/样本量敏感', s:'todo'},
+        {x:'IS — 早期指标,了解其已知缺陷', s:'todo'},
+        {x:'sFID / KID — FID 改进变体,KID 小样本更无偏', s:'todo'},
+        {x:'Precision & Recall — 保真度与多样性解耦', s:'todo'},
+        {x:'CLIP Score — 文图对齐度,文生图必备', s:'todo'},
+        {x:'LPIPS — 感知相似度,重建/编辑/一致性', s:'todo'},
+        {x:'PSNR / SSIM — 像素/结构保真,用于有 GT 任务', s:'todo'},
+        {x:'人工评测与偏好模型 — DrawBench/HPSv2/ImageReward/PickScore', s:'todo'},
+        {x:'指标陷阱 — 为何要多指标联合报告', s:'todo'},
+      ]},
+      {n:'视频评测 · 理论', items:[
+        {x:'FVD — 视频版 FID,基于 I3D 时空特征(最核心)', s:'todo'},
+        {x:'KVD — FVD 的 MMD 变体', s:'todo'},
+        {x:'时序一致性 — warp error、光流、帧间 CLIP 相似度', s:'todo'},
+        {x:'运动质量 — 运动幅度/平滑度、是否伪静止', s:'todo'},
+        {x:'VBench / EvalCrafter — 多维度综合 benchmark(事实标准)', s:'todo'},
+        {x:'逐帧图像指标 — 按帧聚合的做法及局限', s:'todo'},
+      ]},
+      {n:'评测方法论(通用)', items:[
+        {x:'评测协议规范 — 样本量/分辨率/seed/参考集(复现性)', s:'todo'},
+        {x:'公平对比原则 — 对齐 NFE、CFG scale、训练数据规模', s:'todo'},
+        {x:'自动指标 vs 人工评测 — 何时上 human eval', s:'todo'},
+        {x:'指标与体感的鸿沟 — FID 降了但肉眼更差', s:'todo'},
+      ]},
+      {n:'代码', items:[
+        {x:'用 pytorch-fid / clean-fid 计算 FID,验证 resize 影响', s:'todo'},
+        {x:'用 torchmetrics 跑通 FID/IS/KID/LPIPS', s:'todo'},
+        {x:'计算 CLIP Score 并对生成图排序', s:'todo'},
+        {x:'复现 Precision/Recall 曲线', s:'todo'},
+        {x:'用官方实现计算 FVD,理解 I3D 特征提取', s:'todo'},
+        {x:'跑通 VBench 部分维度', s:'todo'},
+        {x:'搭最小评测脚本:目录输入 → 多指标报告输出', s:'todo'},
+      ]},
+    ]},
+    {t:'配套资源', g:[
+      {n:'必读论文(精读)', items:[
+        {x:'DDPM (Ho et al., 2020)', s:'todo'},
+        {x:'DDIM (Song et al., 2020)', s:'todo'},
+        {x:'Score-based SDE (Song et al., 2021)', s:'todo'},
+        {x:'Classifier-Free Guidance (Ho & Salimans, 2022)', s:'todo'},
+        {x:'LDM / Stable Diffusion (Rombach et al., 2022)', s:'todo'},
+        {x:'DiT (Peebles & Xie, 2023)', s:'todo'},
+        {x:'Flow Matching (Lipman et al., 2023)', s:'done'},
+        {x:'Rectified Flow (Liu et al., 2023)', s:'todo'},
+        {x:'SD3 (Esser et al., 2024)', s:'todo'},
+        {x:'CogVideoX / Sora 技术报告', s:'todo'},
+        {x:'FID / Precision-Recall 评测论文', s:'todo'},
+        {x:'FVD / VBench (Huang et al., 2024)', s:'todo'},
+      ]},
+      {n:'必用代码库', items:[
+        {x:'huggingface/diffusers — 主力推理与微调框架', s:'todo'},
+        {x:'huggingface/transformers — 文本编码器、CLIP', s:'todo'},
+        {x:'lucidrains 系列 — 读最小实现学架构', s:'todo'},
+        {x:'各模型官方仓库(CogVideoX / FLUX / Wan)', s:'todo'},
+        {x:'pytorch-fid / clean-fid — FID 计算', s:'todo'},
+        {x:'torchmetrics — FID/IS/KID/LPIPS 一站式', s:'todo'},
+        {x:'VBench — 视频生成综合评测', s:'todo'},
+      ]},
+    ]},
+    {t:'里程碑检查点', g:[
+      {n:'掌握标准', items:[
+        {x:'M1 不看教程从零写出可训练的 DDPM', s:'todo'},
+        {x:'M2 写出 Rectified Flow 并解释与 DDPM 训练目标差异', s:'todo'},
+        {x:'M3 用自己数据训练 LoRA + ControlNet 做可控生成', s:'todo'},
+        {x:'M4 读懂开源视频模型,指出其时序建模实现', s:'todo'},
+        {x:'M5 独立跑通并微调图生视频 pipeline', s:'todo'},
+        {x:'M6 为自己模型搭多指标评测流程并解释指标含义', s:'todo'},
+      ]},
+    ]},
+  ];
+}
+
+function uid(){ return Math.random().toString(36).slice(2,9); }
+
+let data = load();
+function load(){
+  try{ const r=localStorage.getItem(STORAGE_KEY); if(r) return JSON.parse(r); }catch(e){}
+  // migrate from v1 (preserve states), else default
+  try{
+    const old=localStorage.getItem(OLD_KEY);
+    if(old){ const od=JSON.parse(old); if(Array.isArray(od)&&od.length) return od; }
+  }catch(e){}
+  return defaultData();
+}
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+const tree = document.getElementById('tree');
+
+/* ---- counting / progress ---- */
+function allItems(){ const a=[]; data.forEach(s=>(s.g||[]).forEach(g=>(g.items||[]).forEach(it=>a.push(it)))); return a; }
+function countState(sec,state){ let c=0;(sec.g||[]).forEach(g=>(g.items||[]).forEach(it=>{ if(!state||((it.s||'todo')===state))c++; }));return c; }
+
+function buildFilters(){
+  const items=allItems();
+  const counts={all:items.length,
+    done:items.filter(i=>(i.s||'todo')==='done').length,
+    prog:items.filter(i=>i.s==='prog').length,
+    todo:items.filter(i=>(i.s||'todo')==='todo').length};
+  const defs=[['all','全部',''],['todo','未开始','var(--todo)'],['prog','进行中','var(--prog)'],['done','已完成','var(--done)']];
+  const fb=document.getElementById('filters'); fb.innerHTML='';
+  defs.forEach(([k,label,col])=>{
+    const c=document.createElement('div');
+    c.className='chip '+k+(activeFilter===k?' on':'');
+    c.innerHTML=(col?`<i style="background:${col}"></i>`:'')+label+` <span class="cnt">${counts[k]}</span>`;
+    c.onclick=()=>{ activeFilter=k; render(); };
+    fb.appendChild(c);
+  });
+}
+
+function matchFilter(it){
+  if(activeFilter!=='all' && (it.s||'todo')!==activeFilter) return false;
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  if(q && !(it.x||'').toLowerCase().includes(q)) return false;
+  return true;
+}
+
+function noteBlock(obj, big, onRemove){
+  const wrap=document.createElement('div');
+  wrap.className = big?'note':'leaf-note';
+  wrap.innerHTML = ICONS.note;
+  const t=document.createElement('div'); t.className='ntxt'; t.contentEditable='true'; t.spellcheck=false;
+  t.textContent = obj.note||'';
+  t.onblur=()=>{ obj.note=t.textContent.trim(); if(!obj.note){ delete obj.note; render(); } save(); };
+  t.onkeydown=e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); t.blur(); } };
+  const close=document.createElement('span'); close.className='nclose'; close.textContent='×';
+  close.title='删除备注'; close.onclick=()=>{ delete obj.note; save(); render(); };
+  wrap.append(t, close);
+  return wrap;
+}
+
+function render(){
+  buildFilters();
+  tree.innerHTML='';
+  data.forEach((sec,si)=>{
+    const total=countState(sec), done=countState(sec,'done'), prog=countState(sec,'prog');
+    const ld=document.createElement('div');
+    ld.className='layer'+(sec.collapsed?' collapsed':'');
+
+    const head=document.createElement('div');
+    head.className='layer-head';
+    head.innerHTML=`<svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      <span class="layer-title" contenteditable="true" spellcheck="false"></span>
+      <div class="mini-bar"><div class="d" style="width:${total?done/total*100:0}%"></div><div class="p" style="width:${total?prog/total*100:0}%"></div></div>
+      <span class="layer-count">${done}/${total}</span>
+      <button class="icon-btn" title="为本层加备注">${ICONS.note}</button>
+      <button class="icon-btn" title="删除本层" style="color:var(--danger)">${ICONS.trash}</button>`;
+    const lt=head.querySelector('.layer-title'); lt.textContent=sec.t;
+    head.querySelector('.caret').onclick=e=>{e.stopPropagation();sec.collapsed=!sec.collapsed;save();render();};
+    head.onclick=e=>{ if(e.target.closest('.layer-title')||e.target.closest('.icon-btn'))return; sec.collapsed=!sec.collapsed;save();render(); };
+    lt.onclick=e=>e.stopPropagation();
+    lt.onblur=()=>{ sec.t=lt.textContent.trim()||'未命名'; save(); };
+    lt.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault();lt.blur();} };
+    const hb=head.querySelectorAll('.icon-btn');
+    hb[0].onclick=e=>{e.stopPropagation(); if(sec.note===undefined)sec.note=''; sec.collapsed=false; save(); render();
+      setTimeout(()=>{const n=ld.querySelector('.layer-body>.note .ntxt'); if(n)n.focus();},0); };
+    hb[1].onclick=e=>{e.stopPropagation(); if(confirm('删除整层「'+sec.t+'」?')){ data.splice(si,1); save(); render(); } };
+    ld.appendChild(head);
+
+    const body=document.createElement('div'); body.className='layer-body';
+    if(sec.note!==undefined) body.appendChild(noteBlock(sec,true));
+
+    let visibleInLayer=0;
+    (sec.g||[]).forEach((grp,gi)=>{
+      const gd=document.createElement('div'); gd.className='group';
+      const gh=document.createElement('div'); gh.className='grp-head';
+      gh.innerHTML=`<span class="grp-dot"></span>
+        <span class="gname" contenteditable="true" spellcheck="false"></span>
+        <span class="grp-actions">
+          <button class="icon-btn" title="添加能力">${ICONS.plus}</button>
+          <button class="icon-btn" title="本组备注">${ICONS.note}</button>
+          <button class="icon-btn" title="删除本组" style="color:var(--danger)">${ICONS.trash}</button>
+        </span>`;
+      const gn=gh.querySelector('.gname'); gn.textContent=grp.n;
+      gn.onblur=()=>{ grp.n=gn.textContent.trim()||'未命名'; save(); };
+      gn.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault();gn.blur();} };
+      const gb=gh.querySelectorAll('.icon-btn');
+      gb[0].onclick=()=>{ grp.items.push({id:uid(),x:'新能力',s:'todo'}); save(); render(); };
+      gb[1].onclick=()=>{ if(grp.note===undefined)grp.note=''; save(); render();
+        setTimeout(()=>{const n=gd.querySelector(':scope > .note .ntxt'); if(n)n.focus();},0); };
+      gb[2].onclick=()=>{ if(confirm('删除整个「'+grp.n+'」组?')){ sec.g.splice(gi,1); save(); render(); } };
+      gd.appendChild(gh);
+      if(grp.note!==undefined) gd.appendChild(noteBlock(grp,true));
+
+      (grp.items||[]).forEach((it,ii)=>{
+        if(!it.id) it.id=uid();
+        const st=it.s||'todo';
+        const show=matchFilter(it);
+        if(show) visibleInLayer++;
+        const row=document.createElement('div');
+        row.className='item'+(st==='done'?' done':'')+(show?'':' hide');
+
+        const dot=document.createElement('div'); dot.className='dot '+st; dot.textContent=STATE_MARK[st]; dot.title='点击切换状态';
+        dot.onclick=()=>{ const i=STATES.indexOf(it.s||'todo'); it.s=STATES[(i+1)%3]; save(); render(); };
+
+        const txt=document.createElement('div'); txt.className='itxt'; txt.contentEditable='true'; txt.spellcheck=false; txt.textContent=it.x;
+        txt.onblur=()=>{ it.x=txt.textContent.trim(); save(); };
+        txt.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault();txt.blur();} };
+
+        const badge=document.createElement('span'); badge.className='badge '+st; badge.textContent=STATE_LABEL[st];
+
+        const acts=document.createElement('span'); acts.className='item-actions';
+        const bNote=document.createElement('button'); bNote.className='icon-btn'; bNote.title='备注'; bNote.innerHTML=ICONS.note;
+        bNote.onclick=()=>{ if(it.note===undefined)it.note=''; save(); render();
+          setTimeout(()=>{const all=tree.querySelectorAll('.leaf-note .ntxt'); if(all.length)all[all.length-1].focus();},0); };
+        const bDel=document.createElement('button'); bDel.className='icon-btn'; bDel.title='删除'; bDel.style.color='var(--danger)'; bDel.innerHTML=ICONS.trash;
+        bDel.onclick=()=>{ grp.items.splice(ii,1); save(); render(); };
+        acts.append(bNote,bDel);
+
+        row.append(dot,txt,badge,acts);
+        gd.appendChild(row);
+        if(show && it.note!==undefined) gd.appendChild(noteBlock(it,false));
+      });
+
+      const gtools=document.createElement('div'); gtools.className='grp-tools';
+      const addItem=document.createElement('button'); addItem.className='ghost'; addItem.textContent='+ 能力点';
+      addItem.onclick=()=>{ grp.items.push({id:uid(),x:'新能力',s:'todo'}); save(); render(); };
+      gtools.appendChild(addItem);
+      gd.appendChild(gtools);
+
+      body.appendChild(gd);
+    });
+
+    if(visibleInLayer===0 && (activeFilter!=='all' || document.getElementById('searchInput').value.trim())){
+      const e=document.createElement('div'); e.className='empty'; e.textContent='本层无符合筛选条件的能力';
+      body.appendChild(e);
+    }
+
+    const tools=document.createElement('div'); tools.className='layer-tools';
+    const addGrp=document.createElement('button'); addGrp.className='ghost'; addGrp.textContent='+ 添加子分组';
+    addGrp.onclick=()=>{ (sec.g=sec.g||[]).push({n:'新分组',items:[]}); save(); render(); };
+    const addNote=document.createElement('button'); addNote.className='ghost'; addNote.textContent='+ 本层备注';
+    addNote.onclick=()=>{ if(sec.note===undefined)sec.note=''; save(); render(); };
+    tools.append(addGrp,addNote);
+    body.appendChild(tools);
+
+    ld.appendChild(body);
+    tree.appendChild(ld);
+  });
+  updateProgress();
+}
+
+function updateProgress(){
+  const items=allItems(), total=items.length;
+  const done=items.filter(i=>(i.s||'todo')==='done').length;
+  const prog=items.filter(i=>i.s==='prog').length;
+  const todo=total-done-prog;
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('pct').textContent=pct+'%';
+  document.getElementById('summary').innerHTML=`<b>已完成 ${done}</b> · 进行中 ${prog} · 未开始 ${todo} · 共 ${total} 项`;
+  document.getElementById('segDone').style.width=(total?done/total*100:0)+'%';
+  document.getElementById('segProg').style.width=(total?prog/total*100:0)+'%';
+  const C=150.8; document.getElementById('ringProg').style.strokeDashoffset=C*(1-(total?done/total:0));
+}
+
+function expandAll(open){ data.forEach(s=>s.collapsed=!open); save(); render(); }
+function addSection(){ data.push({t:'新能力层',g:[{n:'新分组',items:[]}]}); save(); render(); }
+
+function exportMarkdown(){
+  let md='# 图像 / 视频生成 · 能力树\n\n';
+  data.forEach(s=>{
+    md+=`## ${s.t}\n\n`;
+    if(s.note) md+=`> 备注:${s.note}\n\n`;
+    (s.g||[]).forEach(g=>{
+      md+=`### ${g.n}\n\n`;
+      if(g.note) md+=`> 备注:${g.note}\n\n`;
+      (g.items||[]).forEach(it=>{
+        const mark=(it.s==='done')?'[x]':'[ ]';
+        const tag=it.s==='prog'?' `进行中`':'';
+        md+=`- ${mark} ${it.x}${tag}\n`;
+        if(it.note) md+=`  - 备注:${it.note}\n`;
+      });
+      md+='\n';
+    });
+  });
+  download(md,'能力树.md','text/markdown');
+}
+function exportJSON(){ download(JSON.stringify(data,null,2),'能力树.json','application/json'); }
+function importJSON(){ document.getElementById('fileInput').click(); }
+document.getElementById('fileInput').onchange=e=>{
+  const f=e.target.files[0]; if(!f)return; const r=new FileReader();
+  r.onload=()=>{ try{ data=JSON.parse(r.result); save(); render(); alert('导入成功'); }catch(err){ alert('JSON 解析失败:'+err.message); } };
+  r.readAsText(f); e.target.value='';
+};
+function resetAll(){ if(confirm('恢复到默认能力树?当前所有改动(含备注)将丢失。')){ data=defaultData(); save(); render(); } }
+function download(content,name,type){
+  const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
+}
+
+render();
+</script>
+</body>
+</html>

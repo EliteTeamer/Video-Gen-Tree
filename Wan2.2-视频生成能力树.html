@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wan2.2 · 视频生成技术能力树</title>
+<style>
+  :root{
+    --bg:#f5f1e9; --panel:#fffefa; --ink:#211f1a; --muted:#756f64; --faint:#9d968b; --line:#e4dacc;
+    --accent:#1f6f78; --accent-soft:#e5f4f3; --accent-deep:#15545c;
+    --done:#19895f; --done-soft:#e2f5ec; --prog:#b87412; --prog-soft:#faecd2;
+    --todo:#858074; --todo-soft:#efebe3; --warn:#b94d35; --note:#b9922e; --note-soft:#fbf3d9;
+    --r:16px; --r-sm:10px; --tree:#d7cab9;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:
+      radial-gradient(900px 420px at 82% -10%, #dff0ee 0%, rgba(223,240,238,0) 60%),
+      radial-gradient(760px 360px at 3% 8%, #fbebd2 0%, rgba(251,235,210,0) 58%),
+      var(--bg);
+    color:var(--ink);line-height:1.65;padding:30px 18px 90px}
+  .wrap{max-width:1120px;margin:0 auto}
+  header{display:grid;grid-template-columns:1fr;gap:14px}
+  .eyebrow{font-size:12px;color:var(--accent-deep);letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+  h1{font-size:27px;font-weight:700;letter-spacing:-.5px;display:flex;align-items:center;gap:10px}
+  h1 svg{width:27px;height:27px;color:var(--accent)}
+  header p{font-size:13.5px;color:var(--muted);max-width:820px}
+  .hero{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:6px}
+  .hero .k{background:rgba(255,254,250,.78);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 12px}
+  .hero .k b{display:block;color:var(--accent-deep);font-size:13px;margin-bottom:2px}
+  .hero .k span{font-size:12px;color:var(--muted)}
+
+  .bar{position:sticky;top:0;z-index:20;margin-top:18px;padding:14px 0 10px;
+    background:linear-gradient(var(--bg) 76%, rgba(245,241,233,0))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+    padding:16px 18px;box-shadow:0 8px 28px rgba(52,39,18,.06)}
+  .ptop{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .ring{position:relative;width:58px;height:58px;flex:0 0 58px}
+  .ring svg{transform:rotate(-90deg)}
+  .pctlabel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:700;color:var(--accent-deep)}
+  .pmeta{flex:1;min-width:220px}
+  .sum{font-size:13px;color:var(--muted)}
+  .sum b{color:var(--ink)}
+  .track{height:7px;border-radius:6px;background:var(--todo-soft);margin-top:9px;overflow:hidden;display:flex}
+  .track .sd{background:var(--done)} .track .sp{background:var(--prog)}
+  .row2{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+  .filters{display:flex;gap:7px;flex-wrap:wrap}
+  .chip{font-family:var(--sans);font-size:12.5px;border:1px solid var(--line);background:var(--panel);
+    color:var(--muted);padding:6px 13px;border-radius:30px;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:6px}
+  .chip:hover{border-color:#c8bcac}
+  .chip i{width:9px;height:9px;border-radius:50%}
+  .chip.on{color:#fff;border-color:transparent}
+  .chip.on.all{background:var(--accent)} .chip.on.todo{background:var(--todo)}
+  .chip.on.prog{background:var(--prog)} .chip.on.done{background:var(--done)}
+  .chip .cnt{font-size:11px;opacity:.72}
+  .spacer{flex:1}
+  .search{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:30px;padding:6px 13px;background:var(--panel)}
+  .search input{border:none;outline:none;font-family:var(--sans);font-size:13px;background:transparent;width:178px;color:var(--ink)}
+  .search svg{width:14px;height:14px;color:var(--faint)}
+  .toolbar{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+  button{font-family:var(--sans);font-size:12.5px;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+    padding:6px 12px;border-radius:var(--r-sm);cursor:pointer;transition:.15s}
+  button:hover{border-color:#c8bcac;background:#fffaf1}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.primary:hover{background:var(--accent-deep)}
+
+  #tree{margin-top:14px}
+  .layer{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-top:14px;overflow:hidden;box-shadow:0 1px 2px rgba(30,25,10,.03)}
+  .layer-head{display:flex;align-items:center;gap:11px;padding:15px 18px;cursor:pointer;user-select:none;border-left:4px solid var(--accent)}
+  .layer-head:hover{background:#fffaf3}
+  .caret{width:17px;height:17px;flex:0 0 17px;transition:transform .2s;color:var(--faint)}
+  .collapsed .caret{transform:rotate(-90deg)}
+  .layer-title{font-size:15.5px;font-weight:700;flex:1;outline:none;border-radius:5px;padding:1px 4px}
+  .layer-title:focus,.gname:focus,.itxt:focus{background:var(--accent-soft)}
+  .mini-bar{width:96px;height:6px;border-radius:5px;background:var(--todo-soft);overflow:hidden;display:flex;flex:0 0 96px}
+  .mini-bar .d{background:var(--done)} .mini-bar .p{background:var(--prog)}
+  .layer-count{font-size:11.5px;color:var(--muted);background:var(--todo-soft);padding:2px 9px;border-radius:20px;flex:0 0 auto}
+  .icon-btn{flex:0 0 auto;border:none;background:transparent;padding:3px;border-radius:6px;cursor:pointer;color:var(--faint);display:inline-flex}
+  .icon-btn:hover{background:var(--todo-soft);color:var(--ink)}
+  .icon-btn svg{width:15px;height:15px}
+  .layer-body{padding:6px 18px 16px 20px}
+  .collapsed .layer-body{display:none}
+  .note{margin:6px 0 4px;background:var(--note-soft);border:1px solid #ecdcae;border-radius:var(--r-sm);padding:8px 11px;font-size:12.5px;color:#66521d;display:flex;gap:8px;align-items:flex-start}
+  .note svg{width:14px;height:14px;flex:0 0 14px;margin-top:3px;color:var(--note)}
+  .note .ntxt,.leaf-note .ntxt{flex:1;outline:none;white-space:pre-wrap;min-height:18px}
+  .note .ntxt:empty:before{content:'写点备注…';color:#b9a55f}
+  .nclose{cursor:pointer;color:#c6b677;font-size:14px;line-height:1}
+  .nclose:hover{color:var(--warn)}
+  .group{position:relative;margin-left:8px;padding-left:22px}
+  .group:before{content:'';position:absolute;left:6px;top:0;bottom:14px;width:2px;background:var(--tree)}
+  .grp-head{position:relative;display:flex;align-items:center;gap:8px;padding:8px 0 6px;margin-top:6px}
+  .grp-head:before{content:'';position:absolute;left:-16px;top:50%;width:14px;height:2px;background:var(--tree)}
+  .grp-dot{width:10px;height:10px;border-radius:3px;background:var(--accent-soft);border:2px solid var(--accent);flex:0 0 auto}
+  .gname{font-size:13.5px;font-weight:700;color:var(--accent-deep);outline:none;border-radius:5px;padding:1px 4px}
+  .grp-actions{display:flex;gap:2px;opacity:0;transition:.15s}
+  .grp-head:hover .grp-actions{opacity:1}
+  .item{position:relative;display:flex;align-items:flex-start;gap:10px;padding:6px 8px 6px 0;border-radius:var(--r-sm)}
+  .item:before{content:'';position:absolute;left:-16px;top:18px;width:14px;height:2px;background:var(--tree)}
+  .item:hover{background:#fffaf3}
+  .item.hide{display:none}
+  .dot{flex:0 0 auto;margin-top:1px;width:21px;height:21px;border-radius:7px;border:1.5px solid #cec4b6;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;transition:.15s;background:#fff}
+  .dot:hover{transform:scale(1.08)}
+  .dot.prog{background:var(--prog);border-color:var(--prog)}
+  .dot.done{background:var(--done);border-color:var(--done)}
+  .itxt{flex:1;font-size:13.5px;cursor:text;outline:none;border-radius:5px;padding:1px 4px;min-height:22px}
+  .item.done .itxt{color:var(--faint);text-decoration:line-through;text-decoration-color:#c7c0b4}
+  .badge{flex:0 0 auto;font-size:11px;padding:1px 9px;border-radius:20px;margin-top:2px;white-space:nowrap}
+  .badge.todo{background:var(--todo-soft);color:var(--todo)}
+  .badge.prog{background:var(--prog-soft);color:var(--prog)}
+  .badge.done{background:var(--done-soft);color:var(--done)}
+  .item-actions{display:flex;gap:1px;opacity:0;transition:.15s}
+  .item:hover .item-actions{opacity:1}
+  .leaf-note{position:relative;margin:2px 0 6px 31px;background:var(--note-soft);border:1px solid #ecdcae;border-radius:var(--r-sm);padding:6px 10px;font-size:12px;color:#66521d;display:flex;gap:7px}
+  .leaf-note:before{content:'';position:absolute;left:-16px;top:-6px;bottom:50%;width:2px;background:var(--tree)}
+  .leaf-note svg{width:13px;height:13px;flex:0 0 13px;margin-top:2px;color:var(--note)}
+  .leaf-note .ntxt:empty:before{content:'备注…';color:#b9a55f}
+  .grp-tools,.layer-tools{display:flex;gap:7px;margin:8px 0 2px}
+  .layer-tools{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+  .ghost{font-size:12px;color:var(--muted);border-style:dashed;padding:5px 11px}
+  .add-layer{width:100%;margin-top:16px;border-style:dashed;color:var(--muted);padding:13px;font-size:13px}
+  .empty{font-size:12.5px;color:var(--faint);padding:16px 0;text-align:center}
+  footer{text-align:center;color:var(--faint);font-size:12px;margin-top:34px;line-height:1.8}
+  @media(max-width:820px){.hero{grid-template-columns:1fr 1fr}.mini-bar{display:none}.search input{width:128px}}
+  @media(max-width:560px){body{padding:22px 12px 70px}.hero{grid-template-columns:1fr}.layer-head{padding:13px 12px}.layer-body{padding-left:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Wan2.2 centered learning map</div>
+      <h1>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3.5 8v8L12 21l8.5-5V8L12 3Z"/><path d="M12 12 3.5 8M12 12l8.5-4M12 12v9"/><path d="M7.8 5.5 16.2 10"/></svg>
+        Wan2.2 · 视频生成技术能力树
+      </h1>
+      <p>以 Wan2.2 论文与模块为中心,把视频生成需要掌握的技术能力串成可编辑树:从 latent 表示、VAE、DiT、Flow Matching,到 TI2V 与 A14B MoE,再延展到运动建模、条件控制和质量评测。点击方块切换状态,双击文字编辑,所有改动保存在本浏览器。</p>
+    </div>
+    <div class="hero">
+      <div class="k"><b>论文核心</b><span>Wan-VAE + DiT + Flow Matching + MoE</span></div>
+      <div class="k"><b>主线模型</b><span>TI2V-5B 统一文生/图生视频路径</span></div>
+      <div class="k"><b>进阶模型</b><span>A14B 高噪声/低噪声双专家分工</span></div>
+      <div class="k"><b>能力展开</b><span>视频时序、运动、条件控制与评测</span></div>
+    </div>
+  </header>
+
+  <div class="bar">
+    <div class="card">
+      <div class="ptop">
+        <div class="ring">
+          <svg width="58" height="58">
+            <circle cx="29" cy="29" r="24" fill="none" stroke="#ece6db" stroke-width="7"/>
+            <circle id="ringProg" cx="29" cy="29" r="24" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+          </svg>
+          <div class="pctlabel" id="pct">0%</div>
+        </div>
+        <div class="pmeta">
+          <div class="sum" id="summary">共 0 项</div>
+          <div class="track"><div class="sd" id="segDone" style="width:0"></div><div class="sp" id="segProg" style="width:0"></div></div>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="filters" id="filters"></div>
+        <div class="spacer"></div>
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="searchInput" placeholder="搜索 Wan / VAE / MoE…" oninput="render()">
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="primary" onclick="expandAll(true)">全部展开</button>
+        <button onclick="expandAll(false)">全部折叠</button>
+        <button onclick="exportMarkdown()">导出 Markdown</button>
+        <button onclick="exportJSON()">导出 JSON</button>
+        <button onclick="importJSON()">导入 JSON</button>
+        <button onclick="resetAll()">恢复默认</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tree"></div>
+  <button class="add-layer" onclick="addSection()">+ 添加新的技术层</button>
+
+  <footer>
+    单文件离线可用 · 数据存储于本浏览器 localStorage,换设备 / 清缓存前请导出 JSON<br>
+    本页聚焦技术能力树,暂不展开运行命令、分布式、部署和显存工程细节
+  </footer>
+</div>
+<input type="file" id="fileInput" accept=".json" style="display:none">
+
+<script>
+const STORAGE_KEY = 'wan22-video-skill-tree-v1';
+const STATES = ['todo','prog','done'];
+const STATE_LABEL = {todo:'未开始', prog:'进行中', done:'已完成'};
+const STATE_MARK = {todo:'', prog:'~', done:'✓'};
+let activeFilter = 'all';
+
+const ICONS = {
+  note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
+};
+
+function defaultData(){
+  return [
+    {t:'第 1 层 · Wan2.2 论文主线与系统图景', note:'先建立 Wan2.2 的全局坐标:它不是孤立模型,而是把文本编码、视频 VAE、DiT 去噪器、Flow Matching 采样和 MoE 阶段分工组合成视频生成系统。', g:[
+      {n:'论文核心问题', items:[
+        {x:'理解 Wan2.2 要解决的问题:高质量视频生成需要同时处理语义、运动、时序一致性和高分辨率细节', s:'prog'},
+        {x:'把 Wan2.2 放到 latent diffusion / DiT / Flow Matching 的技术谱系中定位', s:'todo'},
+        {x:'区分 Wan2.2 的三条主线:T2V-A14B、I2V-A14B、TI2V-5B', s:'todo'},
+        {x:'理解 27B 总参数 / 14B 激活参数的 MoE 表述,以及它与传统 token-router MoE 的差异', s:'todo'}
+      ]},
+      {n:'端到端生成闭环', items:[
+        {x:'文本 Prompt → UMT5 语义 tokens → DiT cross-attention 条件', s:'todo'},
+        {x:'像素视频 / 首帧图像 → Wan-VAE → 时空 latent 表示', s:'todo'},
+        {x:'噪声 latent → DiT 迭代预测速度场 → Scheduler 推进到干净 latent', s:'todo'},
+        {x:'干净 latent → Wan-VAE Decoder → 像素视频输出', s:'todo'},
+        {x:'用一张流程图解释 UMT5、VAE、DiT、CFG、Scheduler 的输入输出关系', s:'todo'}
+      ]},
+      {n:'从论文到能力树', items:[
+        {x:'把论文架构拆成可学习模块:表示、条件、主干、采样、专家、评测', s:'todo'},
+        {x:'识别哪些是视频生成通用能力,哪些是 Wan2.2 特有设计', s:'todo'},
+        {x:'建立阅读顺序:先 TI2V-5B 单模型主线,再 A14B MoE 差异', s:'todo'}
+      ]}
+    ]},
+    {t:'第 2 层 · 视频 Latent 表示与 Wan-VAE', g:[
+      {n:'Latent Video Representation', items:[
+        {x:'理解为什么视频生成通常在 latent 空间完成,而不是直接在像素空间去噪', s:'todo'},
+        {x:'掌握时空压缩的含义:时间维压缩 × 空间维压缩 × 通道扩展', s:'todo'},
+        {x:'会从像素形状推导 latent 形状,例如 121 帧 720p 视频经 4×16×16 压缩后的 token 规模', s:'todo'},
+        {x:'理解 latent 标准化 mean/std 对扩散训练稳定性的作用', s:'todo'}
+      ]},
+      {n:'Wan-VAE 结构', items:[
+        {x:'Wan2.2 VAE 的 3D Encoder / Decoder 对称结构', s:'todo'},
+        {x:'patchify 2×2 像素打包如何把空间总压缩提升到 16×16', s:'todo'},
+        {x:'CausalConv3d:时间维只看过去帧,保证因果与分块可拼接', s:'todo'},
+        {x:'ResidualBlock、AttentionBlock、上下采样在 VAE 中各自负责什么', s:'todo'},
+        {x:'推理时为何 encode 取均值 mu 而不是重新采样', s:'todo'}
+      ]},
+      {n:'视频 VAE 的通用能力', items:[
+        {x:'理解 2D VAE 与 3D VAE 的差异:逐帧压缩 vs 联合时空压缩', s:'todo'},
+        {x:'分析高压缩率对细节保真、运动连续和 DiT 计算量的取舍', s:'todo'},
+        {x:'掌握分块编解码与缓存如何支持长视频或低显存处理', s:'todo'},
+        {x:'能对比 Wan-VAE、CogVideoX VAE、Stable Diffusion VAE 的设计差异', s:'todo'}
+      ]}
+    ]},
+    {t:'第 3 层 · DiT / WanModel 主干能力', note:'WanModel 是理解 Wan2.2 的中心:噪声 latent 是 self-attention 的主体,文本只作为 cross-attention 条件,时间步通过 AdaLN 调制每个块。', g:[
+      {n:'DiT 基础', items:[
+        {x:'理解 DiT 为什么用 Transformer token 序列替代 U-Net 特征图', s:'todo'},
+        {x:'掌握 patch embedding:时空 latent 如何切成 token 序列', s:'todo'},
+        {x:'理解 self-attention 建模帧内与跨帧关系的方式', s:'todo'},
+        {x:'掌握 cross-attention 如何把文本语义注入视频 latent token', s:'todo'},
+        {x:'理解 FFN / MLP 在 DiT block 中的容量作用', s:'todo'}
+      ]},
+      {n:'WanModel 关键接线', items:[
+        {x:'噪声 latent x 经 patch_embedding 后作为 self-attention 的 Q/K/V', s:'todo'},
+        {x:'UMT5 context 经 text_embedding 后作为 cross-attention 的 K/V', s:'todo'},
+        {x:'时间步 t 经 MLP 生成 AdaLN 的 scale / shift / gate 调制', s:'todo'},
+        {x:'Head + unpatchify 输出与输入 latent 同形的速度场 / noise_pred', s:'todo'},
+        {x:'说明时间步不直接进入 cross-attention,而是调制 self-attention 与 FFN', s:'todo'}
+      ]},
+      {n:'位置与时序建模', items:[
+        {x:'理解 3D RoPE 如何编码帧、行、列三个维度的位置', s:'todo'},
+        {x:'分析 RoPE 只作用于 self-attention q/k 的原因', s:'todo'},
+        {x:'掌握长序列 attention 的计算瓶颈与视频分辨率/帧数的关系', s:'todo'},
+        {x:'理解逐 token 时间步如何支持 TI2V 的首帧固定与后续帧生成', s:'todo'}
+      ]}
+    ]},
+    {t:'第 4 层 · Flow Matching、CFG 与采样动力学', g:[
+      {n:'Flow Matching 理论', items:[
+        {x:'理解 Flow Matching 与 DDPM 的差异:学习速度场而非传统 epsilon 噪声', s:'todo'},
+        {x:'掌握线性插值 x_t = (1-sigma) x_0 + sigma noise 的训练直觉', s:'todo'},
+        {x:'理解速度场目标 v_target = noise - x_0', s:'todo'},
+        {x:'能解释推理中 x0_pred = sample - sigma * model_output 的含义', s:'todo'},
+        {x:'把 Flow Matching 与 Rectified Flow、SD3 / FLUX 的技术路线联系起来', s:'todo'}
+      ]},
+      {n:'采样器与时间步', items:[
+        {x:'理解 sigma 从高噪声到低噪声的连续去噪轨迹', s:'todo'},
+        {x:'掌握 timestep、sigma、SNR 在扩散/流模型中的对应关系', s:'todo'},
+        {x:'理解 UniPC 多步预测-校正求解器的直觉作用', s:'todo'},
+        {x:'理解 shift 参数为何会影响高噪声阶段的步数分配', s:'todo'},
+        {x:'能说明步数、分辨率、运动复杂度与采样质量的关系', s:'todo'}
+      ]},
+      {n:'Classifier-Free Guidance', items:[
+        {x:'掌握 CFG 公式:uncond + scale * (cond - uncond)', s:'todo'},
+        {x:'理解正向 prompt 与负向 prompt 两次前向的作用差异', s:'todo'},
+        {x:'分析 guidance scale 对语义贴合、饱和、细节失真的影响', s:'todo'},
+        {x:'理解视频生成中 CFG 为什么会显著增加推理成本', s:'todo'},
+        {x:'比较 TI2V 单标量 guide_scale 与 A14B 分阶段 guide_scale', s:'todo'}
+      ]}
+    ]},
+    {t:'第 5 层 · TI2V-5B:统一文生视频与图生视频', g:[
+      {n:'TI2V-5B 主线', items:[
+        {x:'理解 TI2V-5B 选择单一稠密 DiT 的原因:结构简单、路径统一、便于入门', s:'todo'},
+        {x:'掌握 TI2V-5B 的关键超参:dim、layers、heads、z_dim、vae_stride、patch_size', s:'todo'},
+        {x:'解释同一模型如何同时支持 text-to-video 和 image-to-video', s:'todo'},
+        {x:'理解 TI2V 中 in_dim / out_dim = 48 与 Wan2.2 VAE z_dim 的关系', s:'todo'}
+      ]},
+      {n:'T2V 路径', items:[
+        {x:'从 prompt 与负向 prompt 各自编码得到 cond / uncond context', s:'todo'},
+        {x:'从高斯噪声 latent 开始进行 Flow Matching 去噪', s:'todo'},
+        {x:'每个采样步运行 cond / uncond 两次 DiT 前向并做 CFG', s:'todo'},
+        {x:'去噪完成后由 VAE decode 得到完整视频', s:'todo'}
+      ]},
+      {n:'I2V 路径', items:[
+        {x:'理解首帧图像作为条件时,先经 VAE encode 得到已知 latent z', s:'todo'},
+        {x:'掌握 mask 机制:首帧位置固定,其余 token 参与生成', s:'todo'},
+        {x:'理解每一步去噪后把首帧 latent 钉回去的原因', s:'todo'},
+        {x:'理解逐 token timestep:首帧 t=0,待生成区域 t=当前噪声步', s:'todo'},
+        {x:'把 I2V 机制推广到首尾帧、局部视频编辑和条件续写', s:'todo'}
+      ]}
+    ]},
+    {t:'第 6 层 · A14B MoE:按去噪阶段分工的双专家', g:[
+      {n:'MoE 设计动机', items:[
+        {x:'理解视频去噪早期与后期需要不同能力:大结构/运动 vs 纹理/细节', s:'todo'},
+        {x:'掌握 high-noise expert 与 low-noise expert 的分工', s:'todo'},
+        {x:'理解 Wan2.2 的 MoE 是整模型级专家切换,不是 token 级 FFN 路由', s:'todo'},
+        {x:'解释总参数增加但单步激活参数基本不增加的原因', s:'todo'}
+      ]},
+      {n:'阶段切换机制', items:[
+        {x:'理解 SNR 随去噪过程变化,并作为专家切换依据', s:'todo'},
+        {x:'掌握 t_moe / boundary 的含义:从高噪声专家切到低噪声专家', s:'todo'},
+        {x:'分析 boundary 过早或过晚可能带来的画面问题', s:'todo'},
+        {x:'理解 guide_scale 在 A14B 中可按高/低噪声阶段采用不同值', s:'todo'}
+      ]},
+      {n:'与 TI2V 的对照', items:[
+        {x:'对比 A14B 与 TI2V-5B 的主干规模、VAE 压缩率、latent 通道数', s:'todo'},
+        {x:'理解 A14B 使用 Wan2.1 VAE,TI2V 使用 Wan2.2 高压缩 VAE 的差异', s:'todo'},
+        {x:'能用“更大 WanModel ×2 + 时间步路由”一句话概括 A14B', s:'todo'},
+        {x:'从 TI2V 迁移理解 A14B:主干、CFG、Flow、文本条件公式不变,变的是专家调度', s:'todo'}
+      ]}
+    ]},
+    {t:'第 7 层 · 视频生成通用技术能力展开', g:[
+      {n:'时序一致性', items:[
+        {x:'理解闪烁、身份漂移、背景漂移、物体形变等视频生成典型失败模式', s:'todo'},
+        {x:'掌握跨帧 attention、3D convolution、temporal latent 对一致性的作用', s:'todo'},
+        {x:'理解 motion prior 与 appearance prior 的区别', s:'todo'},
+        {x:'分析高压缩 latent 对快速运动和小物体细节的影响', s:'todo'}
+      ]},
+      {n:'运动建模', items:[
+        {x:'区分相机运动、主体运动、形变运动和场景动态', s:'todo'},
+        {x:'理解高噪声阶段更偏布局与大运动,低噪声阶段更偏细节补全', s:'todo'},
+        {x:'掌握 motion magnitude、motion smoothness、dynamic degree 等评测维度', s:'todo'},
+        {x:'能分析 prompt 中运动词对视频轨迹的影响', s:'todo'}
+      ]},
+      {n:'条件控制', items:[
+        {x:'文本条件:语义、风格、镜头、动作、时长描述的可控性', s:'todo'},
+        {x:'图像条件:首帧保持、主体一致、背景延展和运动启动', s:'todo'},
+        {x:'扩展条件:姿态、深度、边缘、mask、音频、参考图像', s:'todo'},
+        {x:'理解条件强度与生成自由度之间的取舍', s:'todo'}
+      ]},
+      {n:'长视频与续写', items:[
+        {x:'理解长视频生成的核心难点:上下文长度、漂移累积、叙事一致性', s:'todo'},
+        {x:'掌握分段生成、滑动窗口、关键帧约束、续帧生成的基本思路', s:'todo'},
+        {x:'思考 TI2V 的首帧固定机制如何扩展到视频续写', s:'todo'},
+        {x:'分析 VAE 分块与 DiT 上下文窗口在长视频中的不同角色', s:'todo'}
+      ]}
+    ]},
+    {t:'第 8 层 · 质量评测与研究对照', g:[
+      {n:'视频质量维度', items:[
+        {x:'视觉保真度:清晰度、纹理、光照、伪影、过饱和', s:'todo'},
+        {x:'文本对齐:主体、动作、场景、风格、数量关系是否符合 prompt', s:'todo'},
+        {x:'时序一致性:主体身份、背景结构、材质和风格跨帧稳定', s:'todo'},
+        {x:'运动质量:是否有合理动态、是否过静止、是否抖动或穿模', s:'todo'},
+        {x:'物理与常识:重力、接触、遮挡、因果和世界模型能力', s:'todo'}
+      ]},
+      {n:'指标与 Benchmark', items:[
+        {x:'FVD:基于视频特征分布距离的经典指标,理解其局限', s:'todo'},
+        {x:'VBench:多维视频生成评测,覆盖质量、语义、运动、一致性等维度', s:'todo'},
+        {x:'CLIP Score / 文本视频相似度:衡量语义对齐但不能代表动态质量', s:'todo'},
+        {x:'光流 / warp error / frame consistency:衡量局部时序稳定性', s:'todo'},
+        {x:'人工偏好评测:在复杂视频质量判断中仍然不可替代', s:'todo'}
+      ]},
+      {n:'研究对照', items:[
+        {x:'将 Wan2.2 与 CogVideoX、HunyuanVideo、Sora 技术报告做模块级对照', s:'todo'},
+        {x:'对比 U-Net 视频扩散、DiT 视频扩散、AR 视频生成的结构差异', s:'todo'},
+        {x:'从数据、模型、采样、评测四个维度拆解视频生成论文', s:'todo'},
+        {x:'建立自己的论文阅读模板:问题 → 表示 → 条件 → 主干 → 采样 → 评测 → 局限', s:'todo'}
+      ]}
+    ]}
+  ];
+}
+
+function uid(){ return Math.random().toString(36).slice(2,9); }
+let data = load();
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return defaultData();
+}
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+const tree = document.getElementById('tree');
+function allItems(){ const a=[]; data.forEach(s=>(s.g||[]).forEach(g=>(g.items||[]).forEach(it=>a.push(it)))); return a; }
+function countState(sec,state){ let c=0; (sec.g||[]).forEach(g=>(g.items||[]).forEach(it=>{ if(!state || (it.s||'todo')===state) c++; })); return c; }
+
+function buildFilters(){
+  const items=allItems();
+  const counts={all:items.length, done:items.filter(i=>(i.s||'todo')==='done').length, prog:items.filter(i=>i.s==='prog').length, todo:items.filter(i=>(i.s||'todo')==='todo').length};
+  const defs=[['all','全部',''],['todo','未开始','var(--todo)'],['prog','进行中','var(--prog)'],['done','已完成','var(--done)']];
+  const fb=document.getElementById('filters'); fb.innerHTML='';
+  defs.forEach(([k,label,col])=>{
+    const c=document.createElement('div');
+    c.className='chip '+k+(activeFilter===k?' on':'');
+    c.innerHTML=(col?`<i style="background:${col}"></i>`:'')+label+` <span class="cnt">${counts[k]}</span>`;
+    c.onclick=()=>{ activeFilter=k; render(); };
+    fb.appendChild(c);
+  });
+}
+
+function matchFilter(it){
+  if(activeFilter!=='all' && (it.s||'todo')!==activeFilter) return false;
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  if(q && !(it.x||'').toLowerCase().includes(q)) return false;
+  return true;
+}
+
+function noteBlock(obj,big){
+  const wrap=document.createElement('div');
+  wrap.className=big?'note':'leaf-note';
+  wrap.innerHTML=ICONS.note;
+  const t=document.createElement('div'); t.className='ntxt'; t.contentEditable='true'; t.spellcheck=false; t.textContent=obj.note||'';
+  t.onblur=()=>{ obj.note=t.textContent.trim(); if(!obj.note){ delete obj.note; } save(); render(); };
+  t.onkeydown=e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); t.blur(); } };
+  const close=document.createElement('span'); close.className='nclose'; close.textContent='×'; close.title='删除备注';
+  close.onclick=()=>{ delete obj.note; save(); render(); };
+  wrap.append(t,close);
+  return wrap;
+}
+
+function render(){
+  buildFilters();
+  const items=allItems();
+  const total=items.length;
+  const done=items.filter(i=>(i.s||'todo')==='done').length;
+  const prog=items.filter(i=>i.s==='prog').length;
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('pct').textContent=pct+'%';
+  document.getElementById('summary').innerHTML=`共 <b>${total}</b> 项 · 已完成 <b>${done}</b> · 进行中 <b>${prog}</b> · 未开始 <b>${total-done-prog}</b>`;
+  document.getElementById('segDone').style.width=(total?done/total*100:0)+'%';
+  document.getElementById('segProg').style.width=(total?prog/total*100:0)+'%';
+  document.getElementById('ringProg').style.strokeDashoffset=(150.8*(1-pct/100)).toFixed(2);
+
+  tree.innerHTML='';
+  data.forEach((sec,si)=>{
+    const layer=document.createElement('section');
+    const totalSec=countState(sec), doneSec=countState(sec,'done'), progSec=countState(sec,'prog');
+    layer.className='layer'+(sec.collapsed?' collapsed':'');
+    const head=document.createElement('div');
+    head.className='layer-head';
+    head.innerHTML=`<svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      <span class="layer-title" contenteditable="true" spellcheck="false"></span>
+      <div class="mini-bar"><div class="d" style="width:${totalSec?doneSec/totalSec*100:0}%"></div><div class="p" style="width:${totalSec?progSec/totalSec*100:0}%"></div></div>
+      <span class="layer-count">${doneSec}/${totalSec}</span>
+      <button class="icon-btn" title="为本层加备注">${ICONS.note}</button>
+      <button class="icon-btn" title="删除本层" style="color:var(--warn)">${ICONS.trash}</button>`;
+    const lt=head.querySelector('.layer-title'); lt.textContent=sec.t;
+    head.querySelector('.caret').onclick=e=>{ e.stopPropagation(); sec.collapsed=!sec.collapsed; save(); render(); };
+    head.onclick=e=>{ if(e.target.closest('.layer-title')||e.target.closest('.icon-btn')) return; sec.collapsed=!sec.collapsed; save(); render(); };
+    lt.onclick=e=>e.stopPropagation();
+    lt.onblur=()=>{ sec.t=lt.textContent.trim()||'未命名'; save(); };
+    lt.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); lt.blur(); } };
+    const btns=head.querySelectorAll('.icon-btn');
+    btns[0].onclick=e=>{ e.stopPropagation(); if(sec.note===undefined) sec.note=''; save(); render(); };
+    btns[1].onclick=e=>{ e.stopPropagation(); if(confirm('删除这一技术层?')){ data.splice(si,1); save(); render(); } };
+
+    const body=document.createElement('div'); body.className='layer-body';
+    if(sec.note!==undefined) body.appendChild(noteBlock(sec,true));
+    (sec.g||[]).forEach((grp,gi)=>{
+      const group=document.createElement('div'); group.className='group';
+      const gh=document.createElement('div'); gh.className='grp-head';
+      gh.innerHTML=`<span class="grp-dot"></span><span class="gname" contenteditable="true" spellcheck="false"></span>
+        <span class="grp-actions"><button class="icon-btn" title="添加能力">${ICONS.plus}</button><button class="icon-btn" title="本组备注">${ICONS.note}</button><button class="icon-btn" title="删除本组" style="color:var(--warn)">${ICONS.trash}</button></span>`;
+      const gn=gh.querySelector('.gname'); gn.textContent=grp.n;
+      gn.onblur=()=>{ grp.n=gn.textContent.trim()||'未命名'; save(); };
+      gn.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); gn.blur(); } };
+      const gbtn=gh.querySelectorAll('.icon-btn');
+      gbtn[0].onclick=()=>{ grp.items.push({x:'新的能力点',s:'todo'}); save(); render(); };
+      gbtn[1].onclick=()=>{ if(grp.note===undefined) grp.note=''; save(); render(); };
+      gbtn[2].onclick=()=>{ if(confirm('删除这个分组?')){ sec.g.splice(gi,1); save(); render(); } };
+      group.appendChild(gh);
+      if(grp.note!==undefined) group.appendChild(noteBlock(grp,false));
+
+      let visible=0;
+      (grp.items||[]).forEach((it,ii)=>{
+        const show=matchFilter(it); if(show) visible++;
+        const st=it.s||'todo';
+        const row=document.createElement('div');
+        row.className='item'+(st==='done'?' done':'')+(show?'':' hide');
+        const dot=document.createElement('div'); dot.className='dot '+st; dot.textContent=STATE_MARK[st]; dot.title='点击切换状态';
+        dot.onclick=()=>{ const i=STATES.indexOf(it.s||'todo'); it.s=STATES[(i+1)%3]; save(); render(); };
+        const txt=document.createElement('div'); txt.className='itxt'; txt.contentEditable='true'; txt.spellcheck=false; txt.textContent=it.x;
+        txt.onblur=()=>{ it.x=txt.textContent.trim()||'未命名能力'; save(); };
+        txt.onkeydown=e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); txt.blur(); } };
+        const badge=document.createElement('span'); badge.className='badge '+st; badge.textContent=STATE_LABEL[st];
+        const acts=document.createElement('span'); acts.className='item-actions';
+        const bNote=document.createElement('button'); bNote.className='icon-btn'; bNote.title='备注'; bNote.innerHTML=ICONS.note;
+        bNote.onclick=()=>{ if(it.note===undefined) it.note=''; save(); render(); };
+        const bDel=document.createElement('button'); bDel.className='icon-btn'; bDel.title='删除'; bDel.style.color='var(--warn)'; bDel.innerHTML=ICONS.trash;
+        bDel.onclick=()=>{ grp.items.splice(ii,1); save(); render(); };
+        acts.append(bNote,bDel);
+        row.append(dot,txt,badge,acts);
+        group.appendChild(row);
+        if(it.note!==undefined && show) group.appendChild(noteBlock(it,false));
+      });
+      if(!visible && (grp.items||[]).length) {
+        const emp=document.createElement('div'); emp.className='empty'; emp.textContent='当前筛选下本组无匹配项'; group.appendChild(emp);
+      }
+      const tools=document.createElement('div'); tools.className='grp-tools';
+      const add=document.createElement('button'); add.className='ghost'; add.textContent='+ 添加能力点'; add.onclick=()=>{ grp.items.push({x:'新的能力点',s:'todo'}); save(); render(); };
+      tools.appendChild(add); group.appendChild(tools); body.appendChild(group);
+    });
+    const tools=document.createElement('div'); tools.className='layer-tools';
+    const addG=document.createElement('button'); addG.className='ghost'; addG.textContent='+ 添加子分组'; addG.onclick=()=>{ sec.g.push({n:'新分组',items:[{x:'新的能力点',s:'todo'}]}); save(); render(); };
+    tools.appendChild(addG); body.appendChild(tools);
+    layer.append(head,body); tree.appendChild(layer);
+  });
+}
+
+function expandAll(open){ data.forEach(s=>s.collapsed=!open); save(); render(); }
+function addSection(){ data.push({t:'新的技术层',g:[{n:'新分组',items:[{x:'新的能力点',s:'todo'}]}]}); save(); render(); }
+function resetAll(){ if(confirm('恢复到默认 Wan2.2 技术能力树? 当前所有改动含备注将丢失。')){ data=defaultData(); save(); render(); } }
+function download(content,name,type){
+  const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
+}
+function exportJSON(){ download(JSON.stringify(data,null,2),'wan22-video-skill-tree.json','application/json'); }
+function exportMarkdown(){
+  let md='# Wan2.2 视频生成技术能力树\n\n';
+  data.forEach(sec=>{
+    md+='## '+sec.t+'\n';
+    if(sec.note) md+='> '+sec.note+'\n\n';
+    (sec.g||[]).forEach(g=>{
+      md+='### '+g.n+'\n';
+      if(g.note) md+='> '+g.note+'\n';
+      (g.items||[]).forEach(it=>{
+        const box=(it.s==='done')?'[x]':(it.s==='prog'?'[-]':'[ ]');
+        md+=`- ${box} ${it.x}\n`;
+        if(it.note) md+=`  - 备注: ${it.note}\n`;
+      });
+      md+='\n';
+    });
+  });
+  download(md,'wan22-video-skill-tree.md','text/markdown');
+}
+function importJSON(){ document.getElementById('fileInput').click(); }
+document.getElementById('fileInput').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const v=JSON.parse(r.result); if(!Array.isArray(v)) throw new Error('not array'); data=v; save(); render(); }catch(err){ alert('JSON 格式不正确'); } };
+  r.readAsText(f); e.target.value='';
+};
+render();
+</script>
+</body>
+</html>

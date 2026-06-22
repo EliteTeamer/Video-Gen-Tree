@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wan2.2 代码学习文档 · TI2V-5B 为主线</title>
+<style>
+  :root{
+    --bg:#0f1419; --bg2:#161b22; --bg3:#1c2330; --fg:#d7e0ea; --fg2:#9aa7b5;
+    --accent:#4ea1ff; --accent2:#7ee787; --warn:#ffb454; --pink:#ff7b9c;
+    --border:#2a3340; --code-bg:#0b0f14; --kw:#ff7b9c; --str:#7ee787; --num:#ffb454;
+    --com:#6a7a8c; --fn:#4ea1ff;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--fg);line-height:1.7;font-size:15px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .layout{display:flex;min-height:100vh}
+  /* sidebar */
+  nav.side{width:280px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);
+    position:sticky;top:0;height:100vh;overflow-y:auto;padding:18px 14px}
+  nav.side h1{font-size:16px;color:var(--accent);margin:0 0 4px}
+  nav.side .sub{font-size:12px;color:var(--fg2);margin-bottom:16px}
+  nav.side ol{list-style:none;padding:0;margin:0;counter-reset:sec}
+  nav.side li{margin:2px 0}
+  nav.side a{display:block;padding:5px 10px;border-radius:6px;color:var(--fg2);font-size:13.5px}
+  nav.side a:hover{background:var(--bg3);color:var(--fg);text-decoration:none}
+  nav.side a.grp{color:var(--fg);font-weight:600;margin-top:10px}
+  /* main */
+  main{flex:1;max-width:980px;margin:0 auto;padding:38px 46px 120px}
+  h2{font-size:26px;margin:54px 0 8px;padding-top:12px;border-bottom:1px solid var(--border);
+    padding-bottom:8px;color:#fff}
+  h2 .n{color:var(--accent);font-size:18px;margin-right:8px}
+  h3{font-size:19px;margin:30px 0 6px;color:var(--accent2)}
+  h4{font-size:16px;margin:20px 0 4px;color:var(--warn)}
+  p{margin:10px 0}
+  code{background:var(--code-bg);padding:2px 6px;border-radius:4px;font-size:13px;
+    font-family:"SF Mono",Consolas,"Cascadia Code",monospace;color:#ffd9a0}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;
+    padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.55;
+    font-family:"SF Mono",Consolas,"Cascadia Code",monospace}
+  pre code{background:none;padding:0;color:var(--fg)}
+  .tok-kw{color:var(--kw)} .tok-str{color:var(--str)} .tok-num{color:var(--num)}
+  .tok-com{color:var(--com);font-style:italic} .tok-fn{color:var(--fn)}
+  table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.5px}
+  th,td{border:1px solid var(--border);padding:8px 12px;text-align:left;vertical-align:top}
+  th{background:var(--bg3);color:#fff}
+  tr:nth-child(even){background:var(--bg2)}
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin:18px 0}
+  .note{border-left:4px solid var(--accent);background:var(--bg3);padding:12px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+  .warn{border-left:4px solid var(--warn);background:#2a2114;padding:12px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+  .tip{border-left:4px solid var(--accent2);background:#13241a;padding:12px 18px;border-radius:0 8px 8px 0;margin:16px 0}
+  .kbd{background:var(--bg3);border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;padding:1px 7px;font-size:12px;font-family:monospace}
+  .pill{display:inline-block;background:var(--bg3);border:1px solid var(--border);border-radius:20px;
+    padding:2px 12px;font-size:12px;margin:2px 4px 2px 0;color:var(--fg2)}
+  .pill.a{color:var(--accent);border-color:var(--accent)}
+  .pill.g{color:var(--accent2);border-color:var(--accent2)}
+  .flow{display:flex;flex-direction:column;gap:0;margin:18px 0;font-size:13.5px}
+  .flow .step{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;position:relative}
+  .flow .arrow{text-align:center;color:var(--accent);font-size:18px;line-height:1.1;margin:3px 0}
+  .flow .step .lbl{color:var(--accent2);font-weight:600}
+  .flow .step .sh{color:var(--warn);font-family:monospace;font-size:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .shape{font-family:monospace;color:var(--warn);font-size:12.5px;background:var(--code-bg);
+    padding:1px 6px;border-radius:4px}
+  .toc-top{font-size:13px;color:var(--fg2);margin:6px 0 0}
+  .filehdr{font-family:monospace;font-size:12px;color:var(--accent);background:var(--bg3);
+    display:inline-block;padding:3px 10px;border-radius:6px 6px 0 0;border:1px solid var(--border);border-bottom:none}
+  .filehdr + pre{border-top-left-radius:0;margin-top:0}
+  .muted{color:var(--fg2)}
+  hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+  .badge{font-size:11px;padding:1px 8px;border-radius:10px;background:var(--accent);color:#021;font-weight:700;vertical-align:middle}
+  .dim{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .dim .b{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12.5px}
+  .dim .b b{color:var(--accent)}
+  details{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:8px 16px;margin:12px 0}
+  summary{cursor:pointer;color:var(--accent);font-weight:600}
+  .fig{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px 16px;margin:20px 0;overflow-x:auto}
+  .fig svg{display:block;margin:0 auto;max-width:100%;height:auto;min-width:560px}
+  .fig img{display:block;margin:0 auto;max-width:100%;height:auto;border-radius:8px;background:#fff;padding:10px}
+  .fig .cap{text-align:center;color:var(--fg2);font-size:12.5px;margin-top:12px;line-height:1.5}
+  .fig text{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+  .fig .mono{font-family:"SF Mono",Consolas,monospace}
+  @media(max-width:900px){nav.side{display:none}main{padding:24px}}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="side">
+  <h1>Wan2.2 学习文档</h1>
+  <div class="sub">以 <b>TI2V-5B</b> 为主线 · 文/图生视频</div>
+  <ol>
+    <li><a class="grp" href="#overview">0 · 全景与导读</a></li>
+    <li><a href="#repo">0.1 仓库结构</a></li>
+    <li><a href="#models">0.2 五大任务对比</a></li>
+    <li><a class="grp" href="#pipeline">1 · 端到端数据流</a></li>
+    <li><a href="#cli">1.1 CLI 入口 generate.py</a></li>
+    <li><a href="#config">1.2 配置驱动 configs</a></li>
+    <li><a href="#dataflow">1.3 TI2V 生成全流程</a></li>
+    <li><a class="grp" href="#t5">2 · 文本编码器 (UMT5)</a></li>
+    <li><a class="grp" href="#dit">3 · DiT 主干 WanModel</a></li>
+    <li><a href="#dit-embed">3.1 三类 Embedding</a></li>
+    <li><a href="#dit-block">3.2 AttentionBlock 与调制</a></li>
+    <li><a href="#dit-attn">3.3 注意力 + RoPE</a></li>
+    <li><a href="#dit-head">3.4 Head 与 unpatchify</a></li>
+    <li><a class="grp" href="#vae">4 · 高压缩 VAE 2.2</a></li>
+    <li><a href="#vae-causal">4.1 因果卷积与缓存</a></li>
+    <li><a href="#vae-chunk">4.2 分块编解码</a></li>
+    <li><a class="grp" href="#sched">5 · 流匹配调度器</a></li>
+    <li><a class="grp" href="#cfg-train">6 · CFG 与训练/损失</a></li>
+    <li><a href="#cfg">6.1 CFG 引导代码详解</a></li>
+    <li><a href="#train">6.2 损失计算</a></li>
+    <li><a class="grp" href="#a14b">7 · A14B：MoE 双专家</a></li>
+    <li><a href="#a14b-cmp">7.1 配置与结构对比</a></li>
+    <li><a href="#a14b-moe">7.2 双专家时间步切换</a></li>
+    <li><a class="grp" href="#dist">8 · 分布式：FSDP + Ulysses</a></li>
+    <li><a class="grp" href="#run">10 · 实战运行命令</a></li>
+    <li><a class="grp" href="#glossary">11 · 术语表</a></li>
+  </ol>
+  <div class="toc-top"><a href="#overview">↑ 回到顶部</a></div>
+</nav>
+
+<main>
+
+<h2 id="overview"><span class="n">0</span>全景与导读</h2>
+<p>本文档帮助你<b>系统读懂 Wan2.2 视频生成框架的源码</b>。Wan2.2 是阿里 Wan 团队开源的大规模视频生成模型套件，核心是一个 <b>Latent Diffusion + DiT（Diffusion Transformer）+ Flow Matching</b> 的架构。我们以最易上手的 <span class="pill a">TI2V-5B</span>（稠密 5B 参数、文/图生视频）为主线，串起所有模块。</p>
+
+<div class="card">
+<b>一句话理解整个系统：</b>
+<div class="flow">
+  <div class="step"><span class="lbl">文本/图像</span> → 用 <b>UMT5</b> 把 prompt 编码成语义向量；（图生视频时）用 <b>VAE</b> 把首帧编码成 latent</div>
+  <div class="arrow">▼</div>
+  <div class="step"><span class="lbl">扩散去噪</span> → 从纯高斯噪声出发，<b>DiT (WanModel)</b> 在压缩后的 latent 空间里迭代去噪 50 步，文本作为 cross-attention 条件</div>
+  <div class="arrow">▼</div>
+  <div class="step"><span class="lbl">解码出片</span> → 用 <b>VAE Decoder</b> 把去噪完成的 latent 还原成像素视频，存成 mp4</div>
+</div>
+</div>
+
+<div class="note">
+<b>为什么选 TI2V-5B 作为主线？</b><br>
+A14B 系列（t2v/i2v）是 <b>MoE 双专家</b>（high-noise + low-noise 两个 DiT，按时间步切换），结构更复杂；s2v/animate 还要叠加音频/姿态等额外模态。<b>TI2V-5B 是单一稠密 DiT</b>，一个模型走到底，逻辑最干净，且同时支持「纯文生视频 t2v」和「图生视频 i2v」两条路径，是理解整套框架的最佳切入点。读懂它后再看其它任务只是「加料」。
+</div>
+
+<div class="fig">
+<img src="images/architecture-of-the-wan.png" alt="Architecture of Wan">
+<div class="cap">官方论文图 · Wan 整体架构：左侧 Wan-Encoder(VAE) 把视频压成 latent，中间 N×DiT Blocks 在扩散过程中以 Timestep 和 umT5 文本(Cross Attention)为条件去噪，右侧 Wan-Decoder 还原视频。下面图 1 是结合本仓库代码画的对应详图。</div>
+</div>
+
+<div class="fig">
+<svg viewBox="0 0 880 470" xmlns="http://www.w3.org/2000/svg" font-size="13">
+  <defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#4ea1ff"/>
+    </marker>
+    <marker id="ah2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#7ee787"/>
+    </marker>
+  </defs>
+
+  <!-- Inputs -->
+  <rect x="20" y="40" width="150" height="46" rx="8" fill="#1c2330" stroke="#4ea1ff"/>
+  <text x="95" y="60" fill="#d7e0ea" text-anchor="middle">文本 Prompt</text>
+  <text x="95" y="77" fill="#9aa7b5" text-anchor="middle" font-size="11">"两只打架的猫"</text>
+
+  <rect x="20" y="110" width="150" height="46" rx="8" fill="#1c2330" stroke="#ffb454"/>
+  <text x="95" y="130" fill="#d7e0ea" text-anchor="middle">首帧图像 (可选)</text>
+  <text x="95" y="147" fill="#9aa7b5" text-anchor="middle" font-size="11">仅 i2v 模式</text>
+
+  <!-- Encoders -->
+  <rect x="230" y="38" width="140" height="50" rx="8" fill="#16213a" stroke="#4ea1ff"/>
+  <text x="300" y="58" fill="#4ea1ff" text-anchor="middle" font-weight="bold">UMT5-XXL</text>
+  <text x="300" y="76" fill="#9aa7b5" text-anchor="middle" font-size="11">文本编码器 11GB</text>
+
+  <rect x="230" y="108" width="140" height="50" rx="8" fill="#16213a" stroke="#ffb454"/>
+  <text x="300" y="128" fill="#ffb454" text-anchor="middle" font-weight="bold">VAE Encoder</text>
+  <text x="300" y="146" fill="#9aa7b5" text-anchor="middle" font-size="11">首帧→latent</text>
+
+  <!-- Noise -->
+  <rect x="230" y="185" width="140" height="46" rx="8" fill="#1c2330" stroke="#ff7b9c"/>
+  <text x="300" y="205" fill="#ff7b9c" text-anchor="middle">高斯噪声 N(0,1)</text>
+  <text x="300" y="222" fill="#9aa7b5" text-anchor="middle" font-size="11" class="mono">(48,31,44,80)</text>
+
+  <!-- DiT denoise loop -->
+  <rect x="445" y="60" width="240" height="180" rx="12" fill="#161b22" stroke="#7ee787" stroke-width="2"/>
+  <text x="565" y="84" fill="#7ee787" text-anchor="middle" font-weight="bold">扩散去噪循环 × 50 步</text>
+  <rect x="468" y="98" width="194" height="60" rx="8" fill="#1c2330" stroke="#7ee787"/>
+  <text x="565" y="120" fill="#d7e0ea" text-anchor="middle" font-weight="bold">DiT (WanModel)</text>
+  <text x="565" y="138" fill="#9aa7b5" text-anchor="middle" font-size="11">30 层 · dim 3072</text>
+  <text x="565" y="151" fill="#9aa7b5" text-anchor="middle" font-size="11">每步前向 2 次 (CFG)</text>
+  <rect x="468" y="170" width="194" height="50" rx="8" fill="#1c2330" stroke="#4ea1ff"/>
+  <text x="565" y="190" fill="#4ea1ff" text-anchor="middle">UniPC Scheduler.step()</text>
+  <text x="565" y="207" fill="#9aa7b5" text-anchor="middle" font-size="11">latent 往 t→0 推进一步</text>
+  <!-- loop arrow -->
+  <path d="M468,195 C440,195 440,128 466,128" fill="none" stroke="#7ee787" stroke-dasharray="4 3" marker-end="url(#ah2)"/>
+
+  <!-- VAE decode -->
+  <rect x="720" y="118" width="140" height="64" rx="8" fill="#16213a" stroke="#ffb454"/>
+  <text x="790" y="140" fill="#ffb454" text-anchor="middle" font-weight="bold">VAE Decoder</text>
+  <text x="790" y="158" fill="#9aa7b5" text-anchor="middle" font-size="11">latent→像素</text>
+  <text x="790" y="172" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">(3,121,704,1280)</text>
+
+  <!-- Output -->
+  <rect x="720" y="300" width="140" height="48" rx="8" fill="#1c2330" stroke="#7ee787"/>
+  <text x="790" y="322" fill="#7ee787" text-anchor="middle" font-weight="bold">mp4 视频</text>
+  <text x="790" y="338" fill="#9aa7b5" text-anchor="middle" font-size="11">24fps ≈ 5 秒</text>
+
+  <!-- context note -->
+  <rect x="445" y="300" width="240" height="64" rx="8" fill="#1c2330" stroke="#4ea1ff" stroke-dasharray="3 3"/>
+  <text x="565" y="322" fill="#4ea1ff" text-anchor="middle" font-size="12">context (文本语义) 作为</text>
+  <text x="565" y="340" fill="#9aa7b5" text-anchor="middle" font-size="11">cross-attention 条件注入每一步</text>
+  <text x="565" y="356" fill="#9aa7b5" text-anchor="middle" font-size="11">含 正向 + 负向(uncond) 两套</text>
+
+  <!-- arrows -->
+  <line x1="170" y1="63" x2="228" y2="63" stroke="#4ea1ff" marker-end="url(#ah)"/>
+  <line x1="170" y1="133" x2="228" y2="133" stroke="#ffb454" marker-end="url(#ah)"/>
+  <path d="M370,63 C400,63 410,118 443,120" fill="none" stroke="#4ea1ff" marker-end="url(#ah)"/>
+  <path d="M370,133 C400,150 410,200 443,202" fill="none" stroke="#ffb454" marker-end="url(#ah)"/>
+  <line x1="370" y1="208" x2="443" y2="160" stroke="#ff7b9c" marker-end="url(#ah)"/>
+  <path d="M662,150 C695,150 690,150 718,150" fill="none" stroke="#7ee787" marker-end="url(#ah2)"/>
+  <line x1="790" y1="182" x2="790" y2="298" stroke="#ffb454" marker-end="url(#ah)"/>
+  <path d="M565,300 L565,242" fill="none" stroke="#4ea1ff" stroke-dasharray="3 3" marker-end="url(#ah)"/>
+</svg>
+<div class="cap">图 1 · 系统总览：文本(UMT5)与可选首帧(VAE)编码为条件 → DiT 在 latent 空间迭代去噪 50 步(每步含 CFG 双前向) → VAE 解码出片</div>
+</div>
+
+<h3 id="repo">0.1 仓库结构</h3>
+<div class="filehdr">Wan2.2/</div>
+<pre><code><span class="tok-com"># 顶层</span>
+generate.py            <span class="tok-com"># ★ 唯一 CLI 入口：解析参数 → 选 pipeline → 跑生成 → 存视频</span>
+wan/
+├── __init__.py        <span class="tok-com"># 导出 5 个 pipeline 类（import wan 会加载全部）</span>
+├── text2video.py      <span class="tok-com"># WanT2V    (t2v-A14B, MoE 双模型)</span>
+├── image2video.py     <span class="tok-com"># WanI2V    (i2v-A14B, MoE 双模型)</span>
+├── textimage2video.py <span class="tok-com"># ★ WanTI2V (ti2v-5B, 稠密单模型) —— 本文主线</span>
+├── speech2video.py    <span class="tok-com"># WanS2V    (s2v-14B, 音频驱动)</span>
+├── animate.py         <span class="tok-com"># WanAnimate(animate-14B, 姿态/换人)</span>
+│
+├── configs/           <span class="tok-com"># ★ 单一事实源：每个任务一份超参 EasyDict</span>
+│   ├── shared_config.py   <span class="tok-com"># 公共默认（T5/bf16/text_len=512/负向提示词）</span>
+│   ├── wan_ti2v_5B.py     <span class="tok-com"># ★ TI2V-5B 超参（dim=3072, 30层, vae_stride=4×16×16）</span>
+│   └── __init__.py        <span class="tok-com"># WAN_CONFIGS / SIZE_CONFIGS / SUPPORTED_SIZES 注册表</span>
+│
+├── modules/           <span class="tok-com"># ★ 模型积木</span>
+│   ├── model.py           <span class="tok-com"># ★ WanModel —— DiT 主干（所有任务共用）</span>
+│   ├── attention.py       <span class="tok-com"># flash_attention 封装（FA3→FA2→SDPA 兜底）</span>
+│   ├── t5.py / tokenizers.py  <span class="tok-com"># UMT5-XXL 文本编码器 + HF 分词器</span>
+│   ├── vae2_1.py          <span class="tok-com"># Wan2.1 VAE (stride 4×8×8)，A14B 用</span>
+│   ├── vae2_2.py          <span class="tok-com"># ★ Wan2.2 VAE (stride 4×16×16 高压缩)，TI2V-5B 用</span>
+│   ├── s2v/ , animate/    <span class="tok-com"># 任务专属附加模块</span>
+│
+├── distributed/       <span class="tok-com"># 多卡：fsdp.py / ulysses.py / sequence_parallel.py</span>
+└── utils/             <span class="tok-com"># 调度器(fm_solvers*)、prompt 扩写、save_video 等</span></code></pre>
+
+<h3 id="models">0.2 五大任务一览</h3>
+<table>
+<tr><th>--task</th><th>Pipeline 类</th><th>结构</th><th>VAE</th><th>条件输入</th></tr>
+<tr><td><code>t2v-A14B</code></td><td>WanT2V</td><td>MoE 双 DiT (27B/14B激活)</td><td>2.1 (4×8×8)</td><td>文本</td></tr>
+<tr><td><code>i2v-A14B</code></td><td>WanI2V</td><td>MoE 双 DiT</td><td>2.1</td><td>文本+图像</td></tr>
+<tr><td style="color:var(--accent)"><b>ti2v-5B</b></td><td><b>WanTI2V</b></td><td><b>稠密单 DiT (5B)</b></td><td><b>2.2 (4×16×16)</b></td><td>文本(+可选图像)</td></tr>
+<tr><td><code>s2v-14B</code></td><td>WanS2V</td><td>DiT + 音频编码器</td><td>2.1</td><td>文本+图+音频</td></tr>
+<tr><td><code>animate-14B</code></td><td>WanAnimate</td><td>DiT + 姿态/人脸模块</td><td>2.1</td><td>姿态+遮罩+参考</td></tr>
+</table>
+<div class="tip"><b>设计哲学：「共享主干 + 配置分发」。</b> 所有任务共用同一个 <code>WanModel</code>（modules/model.py），差异几乎全部体现在 <code>configs/</code> 的超参和 pipeline 类的条件注入方式上。新增一个模型变体 = 加一份 config + 在 <code>__init__.py</code> 注册 + 在 <code>generate.py</code> 加一个分支。</div>
+
+<hr>
+
+<h2 id="pipeline"><span class="n">1</span>端到端数据流</h2>
+
+<h3 id="cli">1.1 CLI 入口：generate.py</h3>
+<p><code>generate.py</code> 做三件事：<b>① 解析+校验参数 → ② 按任务名实例化对应 pipeline → ③ 调 <code>.generate()</code> 拿到视频张量并存盘</b>。</p>
+
+<div class="filehdr">generate.py · 任务分发核心（节选）</div>
+<pre><code><span class="tok-kw">def</span> <span class="tok-fn">generate</span>(args):
+    rank = int(os.getenv(<span class="tok-str">"RANK"</span>, <span class="tok-num">0</span>))         <span class="tok-com"># 分布式进程号</span>
+    world_size = int(os.getenv(<span class="tok-str">"WORLD_SIZE"</span>, <span class="tok-num">1</span>))
+    <span class="tok-com"># 单卡默认开 offload；多卡默认关</span>
+    <span class="tok-kw">if</span> args.offload_model <span class="tok-kw">is</span> <span class="tok-kw">None</span>:
+        args.offload_model = <span class="tok-kw">False</span> <span class="tok-kw">if</span> world_size > <span class="tok-num">1</span> <span class="tok-kw">else</span> <span class="tok-kw">True</span>
+
+    cfg = WAN_CONFIGS[args.task]               <span class="tok-com"># 查配置表</span>
+
+    <span class="tok-kw">elif</span> <span class="tok-str">"ti2v"</span> <span class="tok-kw">in</span> args.task:                 <span class="tok-com"># ★ 我们的主线分支</span>
+        wan_ti2v = wan.<span class="tok-fn">WanTI2V</span>(config=cfg, checkpoint_dir=args.ckpt_dir, ...)
+        video = wan_ti2v.<span class="tok-fn">generate</span>(
+            args.prompt,
+            img=img,                            <span class="tok-com"># None=纯文生视频; 有图=图生视频</span>
+            size=SIZE_CONFIGS[args.size],       <span class="tok-com"># (1280, 704)</span>
+            max_area=MAX_AREA_CONFIGS[args.size],
+            frame_num=args.frame_num,           <span class="tok-com"># 121</span>
+            shift=args.sample_shift,            <span class="tok-com"># 5.0</span>
+            sample_solver=args.sample_solver,   <span class="tok-com"># 'unipc'</span>
+            sampling_steps=args.sample_steps,   <span class="tok-com"># 50</span>
+            guide_scale=args.sample_guide_scale,<span class="tok-com"># 5.0 (CFG 强度)</span>
+            seed=args.base_seed,
+            offload_model=args.offload_model)
+
+    <span class="tok-kw">if</span> rank == <span class="tok-num">0</span>:
+        <span class="tok-fn">save_video</span>(tensor=video[<span class="tok-kw">None</span>], save_file=..., fps=cfg.sample_fps,  <span class="tok-com"># 24</span>
+                   normalize=<span class="tok-kw">True</span>, value_range=(-<span class="tok-num">1</span>, <span class="tok-num">1</span>))</code></pre>
+
+<div class="note"><b>关键判断：t2v 还是 i2v？</b> 在 <code>WanTI2V.generate()</code> 内部只看一个条件：<code>if img is not None → self.i2v(...)</code>，否则 <code>self.t2v(...)</code>。同一个 5B 模型、同一套权重，靠「是否注入首帧 latent」来区分两种模式。</div>
+
+<h3 id="config">1.2 配置驱动：configs</h3>
+<p>每个任务的全部超参集中在一份 EasyDict 里，先继承 <code>shared_config.py</code> 再覆盖。这是读懂模型尺寸的「身份证」。</p>
+
+<div class="grid2">
+<div>
+<div class="filehdr">configs/shared_config.py（公共默认）</div>
+<pre><code>wan_shared_cfg.t5_model   = <span class="tok-str">'umt5_xxl'</span>
+wan_shared_cfg.t5_dtype   = torch.bfloat16
+wan_shared_cfg.text_len   = <span class="tok-num">512</span>   <span class="tok-com"># 文本最大token</span>
+wan_shared_cfg.param_dtype= torch.bfloat16
+wan_shared_cfg.num_train_timesteps = <span class="tok-num">1000</span>
+wan_shared_cfg.sample_neg_prompt = <span class="tok-str">'色调艳丽，过曝，静态…'</span>
+wan_shared_cfg.frame_num  = <span class="tok-num">81</span></code></pre>
+</div>
+<div>
+<div class="filehdr">configs/wan_ti2v_5B.py（覆盖项）</div>
+<pre><code>ti2v_5B.vae_checkpoint = <span class="tok-str">'Wan2.2_VAE.pth'</span>
+ti2v_5B.vae_stride = (<span class="tok-num">4</span>, <span class="tok-num">16</span>, <span class="tok-num">16</span>)  <span class="tok-com"># ★ 时4 空16</span>
+ti2v_5B.patch_size = (<span class="tok-num">1</span>, <span class="tok-num">2</span>, <span class="tok-num">2</span>)    <span class="tok-com"># DiT patch</span>
+ti2v_5B.dim       = <span class="tok-num">3072</span>          <span class="tok-com"># 隐藏维</span>
+ti2v_5B.ffn_dim   = <span class="tok-num">14336</span>
+ti2v_5B.num_heads = <span class="tok-num">24</span>
+ti2v_5B.num_layers= <span class="tok-num">30</span>            <span class="tok-com"># 30个Block</span>
+ti2v_5B.sample_steps = <span class="tok-num">50</span>
+ti2v_5B.sample_shift = <span class="tok-num">5.0</span>
+ti2v_5B.frame_num    = <span class="tok-num">121</span>         <span class="tok-com"># ≈5s@24fps</span></code></pre>
+</div>
+</div>
+<p class="muted">这些数字与 <code>hf_download/Wan2.2-TI2V-5B/config.json</code> 完全一致（<code>dim=3072, num_layers=30, num_heads=24, in_dim=48, out_dim=48, model_type="ti2v"</code>）。<b>in/out_dim=48 = VAE 的 z_dim</b>，下文会反复出现。</p>
+
+<h3 id="dataflow">1.3 TI2V-5B 生成全流程（核心！）</h3>
+<p>这是整篇文档最重要的一张图。下面以「<b>纯文生视频 t2v，1280×704，121 帧</b>」为例，逐张量追踪形状变化。理解了形状，就理解了整个框架。</p>
+
+<div class="dim">
+  <div class="b">分辨率 <b>W=1280, H=704</b></div>
+  <div class="b">帧数 <b>F=121</b></div>
+  <div class="b">vae_stride <b>(4,16,16)</b></div>
+  <div class="b">patch_size <b>(1,2,2)</b></div>
+  <div class="b">z_dim <b>48</b></div>
+  <div class="b">dim <b>3072</b></div>
+</div>
+
+<div class="fig">
+<svg viewBox="0 0 920 800" xmlns="http://www.w3.org/2000/svg" font-size="12.5">
+  <defs>
+    <marker id="f1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#4ea1ff"/></marker>
+    <marker id="f2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#7ee787"/></marker>
+    <marker id="f3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#ff7b9c"/></marker>
+    <marker id="f4" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#ffb454"/></marker>
+  </defs>
+
+  <!-- ===== 左列：输入与预处理 ===== -->
+  <!-- ① 文本编码 -->
+  <rect x="24" y="44" width="252" height="60" rx="8" fill="#16213a" stroke="#4ea1ff"/>
+  <text x="40" y="66" fill="#4ea1ff" font-weight="bold">① 文本编码 UMT5-XXL</text>
+  <text x="40" y="84" fill="#9aa7b5" font-size="11">prompt + 负向 prompt 各编码一次</text>
+  <text x="40" y="98" fill="#ffb454" font-size="10.5" class="mono">context / context_null [L≤512, 4096]</text>
+
+  <!-- ④ 噪声 -->
+  <rect x="24" y="150" width="252" height="56" rx="8" fill="#2a1a22" stroke="#ff7b9c"/>
+  <text x="40" y="172" fill="#ff7b9c" font-weight="bold">④ 初始化高斯噪声 N(0,1)</text>
+  <text x="40" y="190" fill="#ffb454" font-size="10.5" class="mono">latents x = (48, 31, 44, 80)</text>
+
+  <!-- ②③ 形状/seq_len 计算 -->
+  <rect x="24" y="252" width="252" height="104" rx="8" fill="#1c2330" stroke="#7ee787"/>
+  <text x="40" y="274" fill="#7ee787" font-weight="bold">②③ 形状 / 序列长度计算</text>
+  <text x="40" y="293" fill="#9aa7b5" font-size="10.5">② latent 形状 = (48,31,44,80)</text>
+  <text x="40" y="309" fill="#9aa7b5" font-size="10.5">③ seq_len = 31×(22×40) = 27,280</text>
+  <text x="40" y="327" fill="#9aa7b5" font-size="10">仅算「尺寸数字」，不产生张量；</text>
+  <text x="40" y="342" fill="#9aa7b5" font-size="10">用于 padding 对齐 + 多卡均分（见下方说明）</text>
+
+  <!-- ===== 右侧：去噪循环大框 ===== -->
+  <rect x="300" y="44" width="596" height="540" rx="12" fill="#161b22" stroke="#7ee787" stroke-width="2"/>
+  <text x="598" y="68" fill="#7ee787" text-anchor="middle" font-weight="bold">⑤ 扩散去噪循环 · UniPC 50 步</text>
+  <text x="598" y="85" fill="#9aa7b5" text-anchor="middle" font-size="10.5">timesteps = set_timesteps(50, shift=5.0)</text>
+
+  <!-- ===== DiT 内部接线（核心）===== -->
+  <rect x="318" y="98" width="560" height="300" rx="10" fill="#0f1620" stroke="#4ea1ff" stroke-width="1.5"/>
+  <text x="598" y="118" fill="#4ea1ff" text-anchor="middle" font-weight="bold">DiT (WanModel) · 本步前向跑 2 次（cond / uncond）</text>
+
+  <!-- Row A: latent → patch_embedding → Self-Attn -->
+  <rect x="334" y="132" width="150" height="40" rx="6" fill="#1c2330" stroke="#ff7b9c"/>
+  <text x="409" y="150" fill="#ff7b9c" text-anchor="middle" font-size="11">patch_embedding</text>
+  <text x="409" y="164" fill="#9aa7b5" text-anchor="middle" font-size="9.5">Conv3d (1,2,2)</text>
+  <rect x="556" y="132" width="306" height="40" rx="6" fill="#16213a" stroke="#ff7b9c"/>
+  <text x="709" y="150" fill="#ff7b9c" text-anchor="middle" font-size="11">Self-Attention：视频 token 作 Q / K / V</text>
+  <text x="709" y="164" fill="#9aa7b5" text-anchor="middle" font-size="9.5">27280 token + 3D RoPE（带零 padding 到 seq_len）</text>
+  <line x1="484" y1="152" x2="554" y2="152" stroke="#ff7b9c" marker-end="url(#f3)"/>
+
+  <!-- Row B: context → text_embedding → Cross-Attn -->
+  <rect x="334" y="184" width="150" height="40" rx="6" fill="#1c2330" stroke="#4ea1ff"/>
+  <text x="409" y="202" fill="#4ea1ff" text-anchor="middle" font-size="11">text_embedding</text>
+  <text x="409" y="216" fill="#9aa7b5" text-anchor="middle" font-size="9.5">4096 → 3072</text>
+  <rect x="556" y="184" width="306" height="40" rx="6" fill="#16213a" stroke="#4ea1ff"/>
+  <text x="709" y="202" fill="#4ea1ff" text-anchor="middle" font-size="11">Cross-Attention：文本作 K / V，视频作 Q</text>
+  <text x="709" y="216" fill="#9aa7b5" text-anchor="middle" font-size="9.5">把 prompt 语义注入视频 token</text>
+  <line x1="484" y1="204" x2="554" y2="204" stroke="#4ea1ff" marker-end="url(#f1)"/>
+
+  <!-- Row C: timestep → MLP → AdaLN -->
+  <rect x="334" y="236" width="150" height="40" rx="6" fill="#1c2330" stroke="#ffb454"/>
+  <text x="409" y="254" fill="#ffb454" text-anchor="middle" font-size="11">time MLP</text>
+  <text x="409" y="268" fill="#9aa7b5" text-anchor="middle" font-size="9.5">→ 6 路调制</text>
+  <rect x="556" y="236" width="306" height="40" rx="6" fill="#16213a" stroke="#ffb454"/>
+  <text x="709" y="254" fill="#ffb454" text-anchor="middle" font-size="11">AdaLN 调制：注入每个 Block 的 norm</text>
+  <text x="709" y="268" fill="#9aa7b5" text-anchor="middle" font-size="9.5">shift / scale / gate ×2</text>
+  <line x1="484" y1="256" x2="554" y2="256" stroke="#ffb454" marker-end="url(#f4)"/>
+
+  <!-- block stack + output -->
+  <rect x="334" y="290" width="528" height="34" rx="6" fill="#13241a" stroke="#7ee787"/>
+  <text x="598" y="311" fill="#7ee787" text-anchor="middle" font-size="11">↑ 三者在 30 × WanAttentionBlock 内逐层交互（Self→Cross→FFN）</text>
+  <rect x="334" y="332" width="528" height="34" rx="6" fill="#1c2330" stroke="#ff7b9c"/>
+  <text x="598" y="353" fill="#ff7b9c" text-anchor="middle" font-size="11">输出 noise_pred（速度场）形状 (48, 31, 44, 80)，与输入同形</text>
+  <line x1="598" y1="324" x2="598" y2="330" stroke="#7ee787" marker-end="url(#f2)"/>
+
+  <!-- CFG combine -->
+  <rect x="360" y="410" width="476" height="38" rx="7" fill="#1c2330" stroke="#7ee787"/>
+  <text x="598" y="428" fill="#7ee787" text-anchor="middle" font-size="11">CFG: noise_pred = uncond + 5.0·(cond − uncond)</text>
+  <text x="598" y="442" fill="#9aa7b5" text-anchor="middle" font-size="9.5">两次前向的输出在此合并，沿「贴合 prompt」方向外推</text>
+
+  <!-- scheduler step -->
+  <rect x="360" y="458" width="476" height="44" rx="7" fill="#16213a" stroke="#4ea1ff"/>
+  <text x="598" y="478" fill="#4ea1ff" text-anchor="middle" font-size="11.5">scheduler.step(noise_pred, t, latents)</text>
+  <text x="598" y="494" fill="#9aa7b5" text-anchor="middle" font-size="9.5">只收 DiT 输出 + 当前 latent + t；把 latent 往 t→0 推进一步</text>
+
+  <!-- loop back -->
+  <path d="M360,480 C330,480 330,152 332,152" fill="none" stroke="#7ee787" stroke-dasharray="4 3" marker-end="url(#f2)"/>
+  <text x="318" y="320" fill="#7ee787" font-size="10" text-anchor="middle">×50</text>
+
+  <!-- ⑥ VAE decode -->
+  <rect x="300" y="610" width="270" height="56" rx="8" fill="#16213a" stroke="#ffb454"/>
+  <text x="435" y="632" fill="#ffb454" text-anchor="middle" font-weight="bold">⑥ VAE 解码</text>
+  <text x="435" y="650" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">(48,31,44,80) → (3,121,704,1280)</text>
+
+  <!-- ⑦ save -->
+  <rect x="626" y="610" width="270" height="56" rx="8" fill="#1c2330" stroke="#7ee787"/>
+  <text x="761" y="632" fill="#7ee787" text-anchor="middle" font-weight="bold">⑦ 存盘 save_video</text>
+  <text x="761" y="650" fill="#9aa7b5" text-anchor="middle" font-size="10.5">(−1,1)→(0,255), mp4 @24fps</text>
+
+  <!-- i2v note -->
+  <rect x="24" y="700" width="872" height="80" rx="10" fill="#2a2114" stroke="#ffb454" stroke-dasharray="3 3"/>
+  <text x="40" y="722" fill="#ffb454" font-weight="bold" font-size="12">图生视频 i2v 分支（同一函数体）：</text>
+  <text x="40" y="741" fill="#9aa7b5" font-size="11">vae.encode([img]) 编码首帧为 z → masks_like(zero=True) 造「首帧=0/余帧=1」mask → 每步去噪后 latent = (1−mask)·z + mask·latent</text>
+  <text x="40" y="759" fill="#7ee787" font-size="10.5">即把首帧 latent 反复「钉回」，只生成后续帧；generate() 中 if img is not None → self.i2v(...)，否则 self.t2v(...)</text>
+
+  <!-- ===== 跨区箭头 ===== -->
+  <!-- ④ noise → Row A (patch_embedding) -->
+  <path d="M276,178 C300,178 308,152 332,152" fill="none" stroke="#ff7b9c" marker-end="url(#f3)"/>
+  <!-- ① context → Row B (text_embedding) -->
+  <path d="M276,80 C296,80 300,204 332,204" fill="none" stroke="#4ea1ff" marker-end="url(#f1)"/>
+  <!-- ②③ seq_len → Self-Attn padding 注释 -->
+  <path d="M276,300 C300,300 305,158 554,158" fill="none" stroke="#7ee787" stroke-dasharray="3 3" marker-end="url(#f2)"/>
+  <!-- timestep 来源：循环内的 t（标注） -->
+  <text x="360" y="256" fill="#ffb454" font-size="9" text-anchor="end" transform="rotate(-90 345 256)">时间步 t</text>
+  <!-- DiT → CFG -->
+  <line x1="598" y1="366" x2="598" y2="408" stroke="#ff7b9c" marker-end="url(#f3)"/>
+  <!-- CFG → scheduler -->
+  <line x1="598" y1="448" x2="598" y2="456" stroke="#7ee787" marker-end="url(#f2)"/>
+  <!-- loop → VAE -->
+  <path d="M460,584 C450,598 445,600 435,608" fill="none" stroke="#7ee787" marker-end="url(#f2)"/>
+  <!-- VAE → save -->
+  <line x1="570" y1="638" x2="624" y2="638" stroke="#ffb454" marker-end="url(#f4)"/>
+</svg>
+<div class="cap">图 2 · TI2V-5B 生成全流程（t2v，1280×704×121帧）。<b>重点看 DiT 内部三路接线</b>：噪声 latent 经 patch_embedding 变成 token 进 <b>Self-Attention</b>(作 Q/K/V)；文本 context 经 text_embedding 进 <b>Cross-Attention</b>(作 K/V)；时间步经 MLP 生成 <b>AdaLN 调制</b>注入各 Block。调度器只接收 DiT 输出的 noise_pred，不直接吃文本/初始噪声。</div>
+</div>
+
+<div class="flow">
+  <div class="step"><span class="lbl">① 文本编码</span>　UMT5-XXL：prompt 与负向 prompt 各编码一次<br>
+    <span class="sh">["一段文字"] → context: [L_text, 4096]　（L_text≤512）</span></div>
+  <div class="arrow">▼</div>
+  <div class="step"><span class="lbl">② 算 latent 目标形状</span>　把像素尺寸按 vae_stride 压缩<br>
+    <span class="sh">target_shape = (z_dim, (F-1)//4+1, H//16, W//16) = (48, 31, 44, 80)</span><br>
+    <span class="muted">F: (121-1)/4+1 = 31 帧 latent；H: 704/16=44；W: 1280/16=80</span></div>
+  <div class="arrow">▼</div>
+  <div class="step"><span class="lbl">③ 算 DiT 序列长度（用于flash-attention varlen并行机制）</span>　latent 再按 patch_size(1,2,2) 切块展平<br>
+    <span class="sh">seq_len = ceil(44*80 / (2*2) * 31) = 31 * 880 = 27,280</span><br>
+    <span class="muted">每帧 (44/2)*(80/2)=22*40=880 个 token，31 帧 → 27280 个 token</span></div>
+  <div class="arrow">▼</div>
+  <div class="step"><span class="lbl">④ 初始化噪声</span>　<span class="sh">noise ~ N(0,1) 形状 (48, 31, 44, 80)</span>　这就是要去噪的「视频 latent」</div>
+  <div class="arrow">▼</div>
+  <div class="step"><span class="lbl">⑤ 扩散去噪循环</span>　调度器给出 50 个时间步 t；每步 DiT 跑两次（条件 + 无条件），做 <b>CFG</b>：<br>
+    <span class="sh">noise_pred = uncond + guide_scale * (cond − uncond)</span><br>
+    <span class="muted">scheduler.step() 用 noise_pred 把 latent 往 t→0 推进一步</span></div>
+  <div class="arrow">▼</div>
+  <div class="step"><span class="lbl">⑥ VAE 解码</span>　去噪完成的 latent <span class="sh">(48,31,44,80)</span> → 像素视频 <span class="sh">(3, 121, 704, 1280)</span></div>
+  <div class="arrow">▼</div>
+  <div class="step"><span class="lbl">⑦ 存盘</span>　save_video：反归一化 (−1,1)→(0,255)，imageio 写 mp4 @ 24fps</div>
+</div>
+
+<div class="filehdr">wan/textimage2video.py · WanTI2V.t2v() 去噪主循环（节选+注释）</div>
+<pre><code><span class="tok-com"># ② latent 目标形状：像素 → 压缩空间</span>
+target_shape = (self.vae.model.z_dim,             <span class="tok-com"># 48</span>
+                (F - <span class="tok-num">1</span>) // self.vae_stride[<span class="tok-num">0</span>] + <span class="tok-num">1</span>,    <span class="tok-com"># 时间: 31</span>
+                size[<span class="tok-num">1</span>] // self.vae_stride[<span class="tok-num">1</span>],         <span class="tok-com"># 高:   44</span>
+                size[<span class="tok-num">0</span>] // self.vae_stride[<span class="tok-num">2</span>])         <span class="tok-com"># 宽:   80</span>
+
+<span class="tok-com"># ③ DiT 序列长度（patch 后 token 数，向 sp_size 对齐）</span>
+seq_len = math.ceil((target_shape[<span class="tok-num">2</span>] * target_shape[<span class="tok-num">3</span>]) /
+                    (self.patch_size[<span class="tok-num">1</span>] * self.patch_size[<span class="tok-num">2</span>]) *
+                    target_shape[<span class="tok-num">1</span>] / self.sp_size) * self.sp_size
+
+<span class="tok-com"># ① 文本编码（条件 + 无条件/负向）</span>
+context      = self.text_encoder([input_prompt], self.device)
+context_null = self.text_encoder([n_prompt], self.device)
+
+<span class="tok-com"># ④ 高斯噪声</span>
+noise = [torch.randn(*target_shape, dtype=torch.float32, generator=seed_g, ...)]
+
+<span class="tok-com"># 调度器：50 步时间表</span>
+sample_scheduler = <span class="tok-fn">FlowUniPCMultistepScheduler</span>(num_train_timesteps=<span class="tok-num">1000</span>,
+                                              shift=<span class="tok-num">1</span>, use_dynamic_shifting=<span class="tok-kw">False</span>)
+sample_scheduler.<span class="tok-fn">set_timesteps</span>(sampling_steps, device=..., shift=shift)  <span class="tok-com"># shift=5.0</span>
+timesteps = sample_scheduler.timesteps
+
+latents = noise
+<span class="tok-kw">for</span> t <span class="tok-kw">in</span> tqdm(timesteps):                  <span class="tok-com"># ⑤ 50 步去噪</span>
+    <span class="tok-com"># 给每个 latent token 一个时间步（TI2V 特有：逐 token 时间，支持图生视频混合）</span>
+    timestep = <span class="tok-fn">_expand_timestep_per_token</span>(t, mask2, seq_len)
+
+    noise_pred_cond   = self.model([latents[<span class="tok-num">0</span>]], t=timestep, context=context,      seq_len=seq_len)[<span class="tok-num">0</span>]
+    noise_pred_uncond = self.model([latents[<span class="tok-num">0</span>]], t=timestep, context=context_null, seq_len=seq_len)[<span class="tok-num">0</span>]
+    <span class="tok-com"># Classifier-Free Guidance：放大「条件 − 无条件」的方向</span>
+    noise_pred = noise_pred_uncond + guide_scale * (noise_pred_cond - noise_pred_uncond)
+
+    <span class="tok-com"># 调度器推进一步</span>
+    temp_x0 = sample_scheduler.<span class="tok-fn">step</span>(noise_pred.unsqueeze(<span class="tok-num">0</span>), t,
+                                     latents[<span class="tok-num">0</span>].unsqueeze(<span class="tok-num">0</span>), return_dict=<span class="tok-kw">False</span>)[<span class="tok-num">0</span>]
+    latents = [temp_x0.squeeze(<span class="tok-num">0</span>)]
+
+videos = self.vae.<span class="tok-fn">decode</span>(latents)        <span class="tok-com"># ⑥ 解码回像素</span></code></pre>
+
+<div class="warn"><b>图生视频 i2v 的差异（同一函数体里）：</b> ① 用 <code>best_output_size()</code> 把输入图按目标面积裁成 VAE 友好尺寸；② 用 <code>z = self.vae.encode([img])</code> 把首帧编码成 latent；③ 用 <code>masks_like(..., zero=True)</code> 造一个「首帧位置=0、其余=1」的 mask，每一步去噪后都执行 <code>latent = (1−mask)*z + mask*latent</code> —— 即<b>把首帧 latent 反复钉回去</b>，只让模型生成后续帧。这就是「图像作为第一帧条件」的实现。</div>
+
+<h4>这一步的精髓：CFG（Classifier-Free Guidance）</h4>
+<p>模型每步预测两个噪声：一个「看到了 prompt」（cond），一个「看的是负向/空 prompt」（uncond）。最终用 <code>uncond + s·(cond−uncond)</code> 外推——<code>s=guide_scale=5.0</code> 越大越贴合 prompt 但可能过饱和。<b>代价是每步要前向两次 DiT</b>，这是推理时间主要来源。</p>
+
+<hr>
+
+<h2 id="t5"><span class="n">2</span>文本编码器 UMT5-XXL</h2>
+<p>文件：<code>wan/modules/t5.py</code> + <code>tokenizers.py</code>。把自然语言 prompt 编码成 DiT 能消费的语义向量序列。</p>
+
+<div class="dim">
+  <div class="b">模型 <b>umt5-xxl encoder-only</b></div>
+  <div class="b">层数 <b>24</b></div>
+  <div class="b">dim <b>4096</b></div>
+  <div class="b">heads <b>64</b></div>
+  <div class="b">权重 <b>11GB bf16</b></div>
+</div>
+
+<div class="filehdr">wan/modules/t5.py · T5EncoderModel.__call__</div>
+<pre><code><span class="tok-kw">def</span> <span class="tok-fn">__call__</span>(self, texts, device):
+    ids, mask = self.tokenizer(texts, return_mask=<span class="tok-kw">True</span>, add_special_tokens=<span class="tok-kw">True</span>)
+    seq_lens = mask.gt(<span class="tok-num">0</span>).sum(dim=<span class="tok-num">1</span>).long()        <span class="tok-com"># 每条文本真实长度</span>
+    context = self.model(ids, mask)                  <span class="tok-com"># [B, 512, 4096]</span>
+    <span class="tok-kw">return</span> [u[:v] <span class="tok-kw">for</span> u, v <span class="tok-kw">in</span> zip(context, seq_lens)]  <span class="tok-com"># 去掉 padding，返回 [L_i, 4096] 列表</span></code></pre>
+
+<div class="note">UMT5 用的是 <b>相对位置编码</b>（T5RelativeEmbedding，按 bucket 给注意力加 bias），<b>不带缩放的注意力</b>（<code>attn = q·kᵀ + bias</code>，T5 风格），LayerNorm 是 RMSNorm 变体。这些是 T5 家族的经典设计，Wan 直接复用。<br><br>
+注意 <span class="pill">--t5_cpu</span> 可让这个 11GB 的编码器常驻 CPU，省显存；<span class="pill">--t5_fsdp</span> 在多卡下把它分片。编码完成后若 <code>offload_model</code> 开启，会立即 <code>.cpu()</code> 腾出显存给 DiT。</div>
+
+<hr>
+
+<h2 id="dit"><span class="n">3</span>DiT 主干 WanModel <span class="badge">核心</span></h2>
+<p>文件：<code>wan/modules/model.py</code>（546 行，整个框架的心脏）。这是一个 <b>Diffusion Transformer</b>：输入「带噪 latent + 时间步 + 文本」，输出「预测的噪声/速度场」。所有任务共用此类，靠 <code>model_type</code> 和超参区分。</p>
+
+<div class="fig">
+<svg viewBox="0 0 880 520" xmlns="http://www.w3.org/2000/svg" font-size="12.5">
+  <defs>
+    <marker id="d1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#4ea1ff"/></marker>
+    <marker id="d2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#ff7b9c"/></marker>
+    <marker id="d3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#ffb454"/></marker>
+  </defs>
+
+  <!-- 3 inputs -->
+  <rect x="20" y="30" width="150" height="52" rx="8" fill="#1c2330" stroke="#ff7b9c"/>
+  <text x="95" y="50" fill="#ff7b9c" text-anchor="middle" font-weight="bold">带噪 latent x</text>
+  <text x="95" y="68" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">(48,31,44,80)</text>
+
+  <rect x="20" y="234" width="150" height="52" rx="8" fill="#1c2330" stroke="#ffb454"/>
+  <text x="95" y="254" fill="#ffb454" text-anchor="middle" font-weight="bold">时间步 t</text>
+  <text x="95" y="272" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">[B, seq_len] 逐token</text>
+
+  <rect x="20" y="410" width="150" height="52" rx="8" fill="#1c2330" stroke="#4ea1ff"/>
+  <text x="95" y="430" fill="#4ea1ff" text-anchor="middle" font-weight="bold">文本 context</text>
+  <text x="95" y="448" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">[L, 4096]</text>
+
+  <!-- embeddings -->
+  <rect x="215" y="28" width="160" height="56" rx="8" fill="#16213a" stroke="#ff7b9c"/>
+  <text x="295" y="48" fill="#d7e0ea" text-anchor="middle">patch_embedding</text>
+  <text x="295" y="65" fill="#9aa7b5" text-anchor="middle" font-size="10.5">Conv3d k=s=(1,2,2)</text>
+  <text x="295" y="79" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">→ (27280, 3072)</text>
+
+  <rect x="215" y="232" width="160" height="56" rx="8" fill="#16213a" stroke="#ffb454"/>
+  <text x="295" y="252" fill="#d7e0ea" text-anchor="middle">time_embedding</text>
+  <text x="295" y="269" fill="#9aa7b5" text-anchor="middle" font-size="10.5">正弦 + MLP, ×6 投影</text>
+  <text x="295" y="283" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">e0:[B,L,6,3072]</text>
+
+  <rect x="215" y="408" width="160" height="56" rx="8" fill="#16213a" stroke="#4ea1ff"/>
+  <text x="295" y="428" fill="#d7e0ea" text-anchor="middle">text_embedding</text>
+  <text x="295" y="445" fill="#9aa7b5" text-anchor="middle" font-size="10.5">Linear 4096→3072</text>
+  <text x="295" y="459" fill="#9aa7b5" text-anchor="middle" font-size="10.5">+GELU+Linear</text>
+
+  <!-- blocks stack -->
+  <rect x="430" y="120" width="250" height="280" rx="12" fill="#161b22" stroke="#7ee787" stroke-width="2"/>
+  <text x="555" y="144" fill="#7ee787" text-anchor="middle" font-weight="bold">30 × WanAttentionBlock</text>
+  <!-- 3 sublayers -->
+  <rect x="452" y="158" width="206" height="46" rx="7" fill="#1c2330" stroke="#ff7b9c"/>
+  <text x="555" y="177" fill="#ff7b9c" text-anchor="middle" font-size="12">Self-Attention + 3D RoPE</text>
+  <text x="555" y="194" fill="#9aa7b5" text-anchor="middle" font-size="10.5">时空全局, AdaLN 调制(e0,e1,e2)</text>
+
+  <rect x="452" y="214" width="206" height="46" rx="7" fill="#1c2330" stroke="#4ea1ff"/>
+  <text x="555" y="233" fill="#4ea1ff" text-anchor="middle" font-size="12">Cross-Attention</text>
+  <text x="555" y="250" fill="#9aa7b5" text-anchor="middle" font-size="10.5">视频 q × 文本 k/v（无时间步调制）</text>
+
+  <rect x="452" y="270" width="206" height="46" rx="7" fill="#1c2330" stroke="#ffb454"/>
+  <text x="555" y="289" fill="#ffb454" text-anchor="middle" font-size="12">FFN 3072→14336→3072</text>
+  <text x="555" y="306" fill="#9aa7b5" text-anchor="middle" font-size="10.5">AdaLN 调制(e3,e4,e5)</text>
+
+  <text x="555" y="338" fill="#9aa7b5" text-anchor="middle" font-size="10.5">残差贯穿, 维度始终 (L, 3072)</text>
+  <path d="M452,360 C432,360 432,182 450,182" fill="none" stroke="#7ee787" stroke-dasharray="4 3" marker-end="url(#d1)"/>
+  <text x="420" y="365" fill="#7ee787" font-size="10" text-anchor="end">×30</text>
+
+  <!-- head + unpatchify -->
+  <rect x="430" y="424" width="250" height="40" rx="8" fill="#16213a" stroke="#7ee787"/>
+  <text x="555" y="442" fill="#7ee787" text-anchor="middle">Head (AdaLN) + unpatchify</text>
+  <text x="555" y="457" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">→ (48,31,44,80)</text>
+
+  <!-- output -->
+  <rect x="730" y="250" width="130" height="60" rx="8" fill="#1c2330" stroke="#ff7b9c"/>
+  <text x="795" y="274" fill="#ff7b9c" text-anchor="middle" font-weight="bold">预测速度场 v</text>
+  <text x="795" y="292" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">(48,31,44,80)</text>
+  <text x="795" y="305" fill="#9aa7b5" text-anchor="middle" font-size="10">与输入同形</text>
+
+  <!-- arrows in -->
+  <line x1="170" y1="56" x2="213" y2="56" stroke="#ff7b9c" marker-end="url(#d2)"/>
+  <line x1="170" y1="260" x2="213" y2="260" stroke="#ffb454" marker-end="url(#d3)"/>
+  <line x1="170" y1="436" x2="213" y2="436" stroke="#4ea1ff" marker-end="url(#d1)"/>
+  <!-- emb to blocks（按代码精确匹配输入端口）-->
+  <!-- 带噪 latent x → Self-Attention（作为隐藏状态/ Q,K,V）-->
+  <path d="M375,56 C408,56 420,178 450,181" fill="none" stroke="#ff7b9c" marker-end="url(#d2)"/>
+  <text x="412" y="120" fill="#ff7b9c" font-size="9.5" text-anchor="middle">x→Q/K/V</text>
+  <!-- 文本 context → Cross-Attention（作为 K/V）-->
+  <path d="M375,436 C408,436 420,240 450,237" fill="none" stroke="#4ea1ff" marker-end="url(#d1)"/>
+  <text x="412" y="372" fill="#4ea1ff" font-size="9.5" text-anchor="middle">context→K/V</text>
+  <!-- 时间步 t（e0）→ 仅调制 Self-Attn 与 FFN 的 norm，不进 Cross-Attn -->
+  <path d="M375,256 C404,248 420,200 450,191" fill="none" stroke="#ffb454" stroke-dasharray="4 3" marker-end="url(#d3)"/>
+  <path d="M375,266 C404,276 420,300 450,300" fill="none" stroke="#ffb454" stroke-dasharray="4 3" marker-end="url(#d3)"/>
+  <text x="408" y="262" fill="#ffb454" font-size="9.5" text-anchor="middle">调制 norm</text>
+  <!-- blocks to head -->
+  <line x1="555" y1="400" x2="555" y2="422" stroke="#7ee787" marker-end="url(#d1)"/>
+  <!-- head to output -->
+  <path d="M680,444 C710,444 760,330 795,312" fill="none" stroke="#ff7b9c" marker-end="url(#d2)"/>
+</svg>
+<div class="cap">图 3 · DiT (WanModel) 数据流（输入端口已按 <code>WanAttentionBlock.forward</code> 精确匹配）：<b>带噪 latent x</b> 经 patch_embedding 成为 token，作 <b>Self-Attention</b> 的 Q/K/V；<b>文本 context</b> 经 text_embedding 后只作 <b>Cross-Attention</b> 的 K/V；<b>时间步 t</b> 经 MLP 生成 6 路调制，仅作用于 Self-Attn 与 FFN 的归一化（橙色虚线），<u>不进入 Cross-Attention</u>。最终 Head+unpatchify 还原成与输入同形的速度场。</div>
+</div>
+
+<div class="card">
+<b>WanModel 的四大组件：</b>
+<table>
+<tr><th>组件</th><th>作用</th><th>形状变化</th></tr>
+<tr><td><b>3 类 Embedding</b></td><td>把 latent/时间/文本投到 dim=3072</td><td>见 3.1</td></tr>
+<tr><td><b>30 × AttentionBlock</b></td><td>自注意力(时空) + 交叉注意力(文本) + FFN，全部由时间步「调制」</td><td>[B, L, 3072] 不变</td></tr>
+<tr><td><b>Head</b></td><td>最后归一化 + 线性投影回 patch</td><td>[B, L, 48·prod(patch)]</td></tr>
+<tr><td><b>unpatchify</b></td><td>把 token 序列还原成 latent 立方体</td><td>→ [48, 31, 44, 80]</td></tr>
+</table>
+</div>
+
+<h3 id="dit-embed">3.1 三类 Embedding</h3>
+<div class="filehdr">model.py · __init__ 中的 embedding 定义</div>
+<pre><code><span class="tok-com"># A. patch_embedding：3D 卷积把 latent 切块，等价于 ViT 的 patchify</span>
+self.patch_embedding = nn.<span class="tok-fn">Conv3d</span>(in_dim, dim, kernel_size=patch_size, stride=patch_size)
+        <span class="tok-com"># in_dim=48 → dim=3072, kernel=stride=(1,2,2)</span>
+
+<span class="tok-com"># B. text_embedding：把 4096 维文本投到 3072</span>
+self.text_embedding = nn.<span class="tok-fn">Sequential</span>(nn.Linear(<span class="tok-num">4096</span>, dim), nn.GELU(<span class="tok-str">'tanh'</span>), nn.Linear(dim, dim))
+
+<span class="tok-com"># C. time_embedding：正弦编码 → MLP；time_projection 再投到 6 份调制参数</span>
+self.time_embedding   = nn.<span class="tok-fn">Sequential</span>(nn.Linear(freq_dim, dim), nn.SiLU(), nn.Linear(dim, dim))
+self.time_projection  = nn.<span class="tok-fn">Sequential</span>(nn.SiLU(), nn.Linear(dim, dim * <span class="tok-num">6</span>))  <span class="tok-com"># ★ ×6</span></code></pre>
+
+<div class="filehdr">model.py · forward 中 latent 如何变成 token 序列</div>
+<pre><code>x = [self.<span class="tok-fn">patch_embedding</span>(u.unsqueeze(<span class="tok-num">0</span>)) <span class="tok-kw">for</span> u <span class="tok-kw">in</span> x]   <span class="tok-com"># (48,31,44,80) → (3072,31,22,40)</span>
+grid_sizes = torch.stack([torch.tensor(u.shape[<span class="tok-num">2</span>:]) <span class="tok-kw">for</span> u <span class="tok-kw">in</span> x])  <span class="tok-com"># 记下 (F,H,W)=(31,22,40)</span>
+x = [u.<span class="tok-fn">flatten</span>(<span class="tok-num">2</span>).transpose(<span class="tok-num">1</span>, <span class="tok-num">2</span>) <span class="tok-kw">for</span> u <span class="tok-kw">in</span> x]      <span class="tok-com"># → (1, 31*22*40=27280, 3072)</span></code></pre>
+<div class="tip"><b>「逐 token 时间步」是 TI2V 的关键设计。</b> 普通 DiT 一个样本一个标量 t；这里 <code>forward</code> 接收的 <code>t</code> 形状是 <code>[B, seq_len]</code>——每个 latent token 可以有不同的时间步。这让「首帧已知(t=0)、其余帧待生成(t=T)」能在同一次前向里混合处理，正是图生视频的底层机制。时间嵌入因此产生 <code>e0</code> 形状 <code>[B, L, 6, dim]</code>。</div>
+
+<h3 id="dit-block">3.2 AttentionBlock 与 AdaLN 调制</h3>
+<p>每个 Block 的结构是经典 <b>DiT + AdaLN-Zero</b>：时间步通过 <code>modulation</code> 产生 6 个调制向量，控制自注意力、FFN 前后的「缩放/平移/门控」。</p>
+
+<div class="filehdr">model.py · WanAttentionBlock.forward（核心调制逻辑）</div>
+<pre><code><span class="tok-com"># e: [B,L,6,dim] 时间嵌入；modulation: 可学习的 [1,6,dim]</span>
+e = (self.modulation.unsqueeze(<span class="tok-num">0</span>) + e).chunk(<span class="tok-num">6</span>, dim=<span class="tok-num">2</span>)   <span class="tok-com"># 拆成 6 份：shift/scale/gate ×2</span>
+
+<span class="tok-com"># ── 自注意力（时空全局注意力 + RoPE）──</span>
+y = self.<span class="tok-fn">self_attn</span>(self.<span class="tok-fn">norm1</span>(x) * (<span class="tok-num">1</span> + e[<span class="tok-num">1</span>]) + e[<span class="tok-num">0</span>], ...)  <span class="tok-com"># scale=e1, shift=e0</span>
+x = x + y * e[<span class="tok-num">2</span>]                                            <span class="tok-com"># gate=e2（残差门控）</span>
+
+<span class="tok-com"># ── 交叉注意力（文本条件）+ FFN ──</span>
+x = x + self.<span class="tok-fn">cross_attn</span>(self.<span class="tok-fn">norm3</span>(x), context, context_lens)  <span class="tok-com"># query=视频, key/val=文本</span>
+y = self.<span class="tok-fn">ffn</span>(self.<span class="tok-fn">norm2</span>(x) * (<span class="tok-num">1</span> + e[<span class="tok-num">4</span>]) + e[<span class="tok-num">3</span>])           <span class="tok-com"># scale=e4, shift=e3</span>
+x = x + y * e[<span class="tok-num">5</span>]                                            <span class="tok-com"># gate=e5</span></code></pre>
+
+<div class="fig">
+<img src="images/Transformer-block-of-wan.png" alt="Transformer block of Wan" style="max-width:420px">
+<div class="cap">官方论文图 · Wan 的 Transformer Block：V-Tokens(视频) 依次过 LayerNorm→Self-Attention→Cross-Attention(注入 T-Tokens 文本)→FFN，Timestep 经 MLP 产生调制注入各层，整体重复 N 次。下面图 4 是本仓库代码里 AdaLN-Zero 6 路调制的实现级详图。</div>
+</div>
+
+<div class="fig">
+<svg viewBox="0 0 720 440" xmlns="http://www.w3.org/2000/svg" font-size="12.5">
+  <defs>
+    <marker id="b1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#d7e0ea"/></marker>
+    <marker id="b2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L6,3 L0,6 Z" fill="#ffb454"/></marker>
+  </defs>
+
+  <!-- timestep modulation source -->
+  <rect x="500" y="20" width="200" height="64" rx="8" fill="#16213a" stroke="#ffb454"/>
+  <text x="600" y="42" fill="#ffb454" text-anchor="middle" font-weight="bold">时间嵌入 e0 + modulation</text>
+  <text x="600" y="60" fill="#9aa7b5" text-anchor="middle" font-size="10.5">chunk(6) → 6 个调制向量</text>
+  <text x="600" y="76" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">e[0..5] (float32)</text>
+
+  <!-- main column -->
+  <line x1="120" y1="30" x2="120" y2="410" stroke="#2a3340" stroke-width="2"/>
+  <rect x="55" y="20" width="130" height="34" rx="7" fill="#1c2330" stroke="#7ee787"/>
+  <text x="120" y="42" fill="#7ee787" text-anchor="middle">输入 x (L,3072)</text>
+
+  <!-- self-attn branch -->
+  <rect x="40" y="80" width="160" height="32" rx="6" fill="#1c2330" stroke="#2a3340"/>
+  <text x="120" y="100" fill="#d7e0ea" text-anchor="middle" font-size="11.5">norm1 · (1+e1) + e0</text>
+  <rect x="40" y="122" width="160" height="34" rx="6" fill="#16213a" stroke="#ff7b9c"/>
+  <text x="120" y="143" fill="#ff7b9c" text-anchor="middle">Self-Attn + RoPE</text>
+  <circle cx="120" cy="180" r="13" fill="#1c2330" stroke="#7ee787"/>
+  <text x="120" y="185" fill="#7ee787" text-anchor="middle" font-size="14">+</text>
+  <text x="240" y="170" fill="#ffb454" font-size="10.5">× e2 (gate)</text>
+
+  <!-- cross-attn -->
+  <rect x="40" y="210" width="160" height="32" rx="6" fill="#1c2330" stroke="#2a3340"/>
+  <text x="120" y="230" fill="#d7e0ea" text-anchor="middle" font-size="11.5">norm3(x)</text>
+  <rect x="40" y="250" width="160" height="34" rx="6" fill="#16213a" stroke="#4ea1ff"/>
+  <text x="120" y="271" fill="#4ea1ff" text-anchor="middle">Cross-Attn (文本)</text>
+  <circle cx="120" cy="305" r="13" fill="#1c2330" stroke="#7ee787"/>
+  <text x="120" y="310" fill="#7ee787" text-anchor="middle" font-size="14">+</text>
+
+  <!-- ffn -->
+  <rect x="40" y="335" width="160" height="32" rx="6" fill="#1c2330" stroke="#2a3340"/>
+  <text x="120" y="355" fill="#d7e0ea" text-anchor="middle" font-size="11.5">norm2 · (1+e4) + e3</text>
+  <rect x="40" y="375" width="160" height="0" /> <!-- spacer -->
+  <rect x="240" y="335" width="150" height="34" rx="6" fill="#16213a" stroke="#ffb454"/>
+  <text x="315" y="356" fill="#ffb454" text-anchor="middle">FFN (GELU)</text>
+  <circle cx="120" cy="405" r="13" fill="#1c2330" stroke="#7ee787"/>
+  <text x="120" y="410" fill="#7ee787" text-anchor="middle" font-size="14">+</text>
+  <text x="240" y="398" fill="#ffb454" font-size="10.5">× e5 (gate)</text>
+
+  <!-- main flow arrows -->
+  <line x1="120" y1="54" x2="120" y2="78" stroke="#d7e0ea" marker-end="url(#b1)"/>
+  <line x1="120" y1="112" x2="120" y2="120" stroke="#d7e0ea" marker-end="url(#b1)"/>
+  <line x1="120" y1="156" x2="120" y2="166" stroke="#ff7b9c" marker-end="url(#b1)"/>
+  <line x1="120" y1="193" x2="120" y2="208" stroke="#7ee787" marker-end="url(#b1)"/>
+  <line x1="120" y1="242" x2="120" y2="248" stroke="#d7e0ea" marker-end="url(#b1)"/>
+  <line x1="120" y1="284" x2="120" y2="292" stroke="#4ea1ff" marker-end="url(#b1)"/>
+  <line x1="120" y1="318" x2="120" y2="333" stroke="#7ee787" marker-end="url(#b1)"/>
+  <path d="M200,351 L238,351" stroke="#d7e0ea" marker-end="url(#b1)"/>
+  <path d="M315,369 C315,392 180,405 135,405" fill="none" stroke="#ffb454" marker-end="url(#b1)"/>
+  <!-- residual skip lines -->
+  <path d="M120,66 C30,66 30,180 107,180" fill="none" stroke="#7ee787" stroke-dasharray="3 3"/>
+  <path d="M120,196 C30,196 30,305 107,305" fill="none" stroke="#7ee787" stroke-dasharray="3 3"/>
+  <path d="M120,320 C30,320 30,405 107,405" fill="none" stroke="#7ee787" stroke-dasharray="3 3"/>
+
+  <!-- modulation distribution arrows -->
+  <path d="M500,70 C320,80 250,95 200,98" fill="none" stroke="#ffb454" stroke-dasharray="4 3" marker-end="url(#b2)"/>
+  <path d="M560,84 C400,200 220,330 190,348" fill="none" stroke="#ffb454" stroke-dasharray="4 3" marker-end="url(#b2)"/>
+  <path d="M600,84 C600,180 150,168 134,178" fill="none" stroke="#ffb454" stroke-dasharray="4 3" marker-end="url(#b2)"/>
+  <path d="M620,84 C640,260 200,400 134,403" fill="none" stroke="#ffb454" stroke-dasharray="4 3" marker-end="url(#b2)"/>
+
+  <!-- legend -->
+  <text x="455" y="150" fill="#9aa7b5" font-size="11">e0,e1 → shift/scale (自注意力前)</text>
+  <text x="455" y="168" fill="#9aa7b5" font-size="11">e2 → gate (自注意力残差)</text>
+  <text x="455" y="186" fill="#9aa7b5" font-size="11">e3,e4 → shift/scale (FFN 前)</text>
+  <text x="455" y="204" fill="#9aa7b5" font-size="11">e5 → gate (FFN 残差)</text>
+  <text x="455" y="228" fill="#7ee787" font-size="11">虚线绿 = 残差直连</text>
+  <text x="455" y="246" fill="#ffb454" font-size="11">虚线橙 = 时间步调制注入</text>
+</svg>
+<div class="cap">图 4 · WanAttentionBlock 的 AdaLN-Zero 调制：时间嵌入拆成 6 路（shift/scale/gate ×2），分别控制自注意力与 FFN 的归一化和残差门控；绿色虚线为残差直连</div>
+</div>
+
+<div class="note"><b>三种注意力各司其职：</b>
+<ul>
+<li><b>Self-Attention</b>：在 27280 个时空 token 间做全局注意力，建模帧内空间 + 帧间时序关系（带 3D RoPE）。</li>
+<li><b>Cross-Attention</b>：视频 token 作 query，文本 token 作 key/value，把 prompt 语义注入。</li>
+<li><b>FFN</b>：逐 token 的两层 MLP（3072→14336→3072，GELU-tanh）。</li>
+</ul>
+所有调制都强制在 <b>float32</b> 下做（<code>autocast(dtype=float32)</code>），保证数值稳定，这是扩散模型训练稳定性的常见技巧。</div>
+
+<h3 id="dit-attn">3.3 注意力实现 + 3D RoPE</h3>
+<p>注意力底层走 <code>wan/modules/attention.py</code> 的 <code>flash_attention</code>，优先级 <b>FlashAttention-3 → FlashAttention-2 → PyTorch SDPA</b> 兜底。用 varlen 接口处理变长（padding 后用 cu_seqlens 标记真实长度）。</p>
+
+<div class="filehdr">model.py · 3D 旋转位置编码（rope_apply）</div>
+<pre><code><span class="tok-com"># 把 head_dim 切成 3 段，分别编码 帧/高/宽 三个轴的位置</span>
+freqs = freqs.split([c - <span class="tok-num">2</span>*(c//<span class="tok-num">3</span>), c//<span class="tok-num">3</span>, c//<span class="tok-num">3</span>], dim=<span class="tok-num">1</span>)    <span class="tok-com"># 时间/H/W 三段</span>
+freqs_i = torch.cat([
+    freqs[<span class="tok-num">0</span>][:f].view(f,<span class="tok-num">1</span>,<span class="tok-num">1</span>,-<span class="tok-num">1</span>).expand(f,h,w,-<span class="tok-num">1</span>),   <span class="tok-com"># 帧轴</span>
+    freqs[<span class="tok-num">1</span>][:h].view(<span class="tok-num">1</span>,h,<span class="tok-num">1</span>,-<span class="tok-num">1</span>).expand(f,h,w,-<span class="tok-num">1</span>),   <span class="tok-com"># 高轴</span>
+    freqs[<span class="tok-num">2</span>][:w].view(<span class="tok-num">1</span>,<span class="tok-num">1</span>,w,-<span class="tok-num">1</span>).expand(f,h,w,-<span class="tok-num">1</span>)],  <span class="tok-com"># 宽轴</span>
+    dim=-<span class="tok-num">1</span>).reshape(seq_len, <span class="tok-num">1</span>, -<span class="tok-num">1</span>)
+x_i = torch.<span class="tok-fn">view_as_real</span>(x_i * freqs_i).flatten(<span class="tok-num">2</span>)          <span class="tok-com"># 复数乘 = 旋转</span></code></pre>
+<div class="tip"><b>3D RoPE</b> 让模型天然理解 token 在「第几帧、第几行、第几列」的三维位置，且对分辨率/帧数有外推能力。用复数乘法实现旋转，在 float64 精度下计算后转回。RoPE 只作用于 <b>自注意力的 q/k</b>，交叉注意力不需要（文本无空间位置）。</div>
+
+<h3 id="dit-head">3.4 Head 与 unpatchify</h3>
+<div class="filehdr">model.py · forward 收尾</div>
+<pre><code>x = self.<span class="tok-fn">head</span>(x, e)                  <span class="tok-com"># [B,L,3072] → [B,L,48*1*2*2=192]（再次 AdaLN 调制）</span>
+x = self.<span class="tok-fn">unpatchify</span>(x, grid_sizes)   <span class="tok-com"># token 序列 → latent 立方体</span>
+
+<span class="tok-kw">def</span> <span class="tok-fn">unpatchify</span>(self, x, grid_sizes):
+    <span class="tok-kw">for</span> u, v <span class="tok-kw">in</span> zip(x, grid_sizes.tolist()):           <span class="tok-com"># v=(31,22,40)</span>
+        u = u[:math.prod(v)].view(*v, *self.patch_size, c)  <span class="tok-com"># (31,22,40,1,2,2,48)</span>
+        u = torch.<span class="tok-fn">einsum</span>(<span class="tok-str">'fhwpqrc->cfphqwr'</span>, u)        <span class="tok-com"># 重排回空间顺序</span>
+        u = u.reshape(c, *[i*j <span class="tok-kw">for</span> i,j <span class="tok-kw">in</span> zip(v, self.patch_size)])  <span class="tok-com"># (48,31,44,80)</span></code></pre>
+<p>输出形状回到了 latent 的 <span class="shape">(48, 31, 44, 80)</span>，与输入噪声一致——这正是去噪循环里 <code>scheduler.step()</code> 所需要的「预测」。</p>
+
+<hr>
+
+<h2 id="vae"><span class="n">4</span>高压缩 VAE 2.2</h2>
+<p>文件：<code>wan/modules/vae2_2.py</code>（1051 行）。这是 TI2V-5B 区别于 A14B 的关键——更激进的压缩比 <b>(4,16,16)</b> 把视频压到极小的 latent，让 5B 模型也能生成 720p/5 秒视频。</p>
+
+<div class="dim">
+  <div class="b">类 <b>Wan2_2_VAE</b></div>
+  <div class="b">z_dim <b>48</b></div>
+  <div class="b">压缩比 <b>时4 × 空16 × 16</b></div>
+  <div class="b">额外 <b>patchify=2</b></div>
+  <div class="b">权重 <b>2.7GB</b></div>
+</div>
+
+<div class="note"><b>压缩比怎么来的？</b> VAE 网络本身做 8×8 空间下采样（3 个 stride-2 阶段），但 <code>encode</code> 入口先 <code>patchify(x, patch_size=2)</code> 做 2×2 像素打包（12=3·2·2 通道），合计 <b>16×16 空间压缩</b>；时间维由 3 段 temporal 下采样里的 2 段实现 <b>4× 压缩</b>。这就是配置里 <code>vae_stride=(4,16,16)</code> 的物理含义。</div>
+
+<div class="fig">
+<img src="images/wan-vae.png" alt="Wan VAE encoder-decoder">
+<div class="cap">官方论文图 · Wan-VAE：Encoder 经多级 Down(空间下采样)+Spat.&amp;Temp.下采样把 <span class="mono">[1+T,H,W,3]</span> 视频压到 latent space，Decoder 对称 UP 还原。下面图 5 是结合 vae2_2.py 代码画的分块/因果卷积细节版。</div>
+</div>
+
+<div class="fig">
+<svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" font-size="12">
+  <defs>
+    <marker id="v1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#4ea1ff"/></marker>
+    <marker id="v2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#ffb454"/></marker>
+  </defs>
+
+  <!-- pixel input -->
+  <rect x="20" y="150" width="96" height="60" rx="8" fill="#1c2330" stroke="#7ee787"/>
+  <text x="68" y="174" fill="#7ee787" text-anchor="middle" font-size="11.5">像素视频</text>
+  <text x="68" y="190" fill="#9aa7b5" text-anchor="middle" font-size="9.5" class="mono">(3,121,</text>
+  <text x="68" y="202" fill="#9aa7b5" text-anchor="middle" font-size="9.5" class="mono">704,1280)</text>
+
+  <!-- patchify -->
+  <rect x="132" y="158" width="70" height="44" rx="7" fill="#16213a" stroke="#4ea1ff"/>
+  <text x="167" y="178" fill="#4ea1ff" text-anchor="middle" font-size="11">patchify</text>
+  <text x="167" y="193" fill="#9aa7b5" text-anchor="middle" font-size="9.5">2×2→12ch</text>
+
+  <!-- ENCODER trapezoid (narrowing) -->
+  <polygon points="218,120 360,150 360,210 218,240" fill="#16213a" stroke="#4ea1ff"/>
+  <text x="289" y="165" fill="#4ea1ff" text-anchor="middle" font-weight="bold">Encoder3d</text>
+  <text x="289" y="183" fill="#9aa7b5" text-anchor="middle" font-size="10">3× Down_ResidualBlock</text>
+  <text x="289" y="197" fill="#9aa7b5" text-anchor="middle" font-size="10">↓ 空间8× · 时间</text>
+
+  <!-- middle: attn + latent -->
+  <rect x="378" y="150" width="120" height="60" rx="8" fill="#1c2330" stroke="#ff7b9c"/>
+  <text x="438" y="172" fill="#ff7b9c" text-anchor="middle" font-weight="bold">latent z</text>
+  <text x="438" y="189" fill="#9aa7b5" text-anchor="middle" font-size="9.5" class="mono">(48,31,44,80)</text>
+  <text x="438" y="202" fill="#9aa7b5" text-anchor="middle" font-size="9">z_dim=48</text>
+
+  <!-- DECODER trapezoid (widening) -->
+  <polygon points="516,150 658,120 658,240 516,210" fill="#16213a" stroke="#ffb454"/>
+  <text x="587" y="165" fill="#ffb454" text-anchor="middle" font-weight="bold">Decoder3d</text>
+  <text x="587" y="183" fill="#9aa7b5" text-anchor="middle" font-size="10">3× Up_ResidualBlock</text>
+  <text x="587" y="197" fill="#9aa7b5" text-anchor="middle" font-size="10">↑ 空间8× · 时间</text>
+
+  <!-- unpatchify + output -->
+  <rect x="676" y="158" width="74" height="44" rx="7" fill="#16213a" stroke="#ffb454"/>
+  <text x="713" y="178" fill="#ffb454" text-anchor="middle" font-size="11">unpatch</text>
+  <text x="713" y="193" fill="#9aa7b5" text-anchor="middle" font-size="9.5">12→3ch</text>
+
+  <rect x="766" y="150" width="96" height="60" rx="8" fill="#1c2330" stroke="#7ee787"/>
+  <text x="814" y="174" fill="#7ee787" text-anchor="middle" font-size="11.5">还原视频</text>
+  <text x="814" y="190" fill="#9aa7b5" text-anchor="middle" font-size="9.5" class="mono">(3,121,</text>
+  <text x="814" y="202" fill="#9aa7b5" text-anchor="middle" font-size="9.5" class="mono">704,1280)</text>
+
+  <!-- arrows -->
+  <line x1="116" y1="180" x2="130" y2="180" stroke="#4ea1ff" marker-end="url(#v1)"/>
+  <line x1="202" y1="180" x2="216" y2="180" stroke="#4ea1ff" marker-end="url(#v1)"/>
+  <line x1="360" y1="180" x2="376" y2="180" stroke="#4ea1ff" marker-end="url(#v1)"/>
+  <line x1="498" y1="180" x2="514" y2="180" stroke="#ffb454" marker-end="url(#v2)"/>
+  <line x1="658" y1="180" x2="674" y2="180" stroke="#ffb454" marker-end="url(#v2)"/>
+  <line x1="750" y1="180" x2="764" y2="180" stroke="#ffb454" marker-end="url(#v2)"/>
+
+  <!-- chunk processing note -->
+  <rect x="218" y="270" width="440" height="56" rx="8" fill="#13241a" stroke="#7ee787" stroke-dasharray="3 3"/>
+  <text x="438" y="290" fill="#7ee787" text-anchor="middle" font-size="11.5">沿时间维分块处理 (encode 每 4 帧 / decode 每 1 latent 帧一块)</text>
+  <text x="438" y="308" fill="#9aa7b5" text-anchor="middle" font-size="10.5">CausalConv3d 只向「过去」padding + feat_cache 传边界帧 → 省显存、保因果</text>
+  <text x="438" y="321" fill="#9aa7b5" text-anchor="middle" font-size="10">中间层各含一个单头 AttentionBlock</text>
+  <line x1="289" y1="240" x2="350" y2="268" stroke="#7ee787" stroke-dasharray="3 3"/>
+  <line x1="587" y1="240" x2="526" y2="268" stroke="#7ee787" stroke-dasharray="3 3"/>
+
+  <!-- scale note -->
+  <text x="438" y="135" fill="#ff7b9c" text-anchor="middle" font-size="10">encode 后 (mu−mean)/std 归一化 · decode 前逆变换</text>
+</svg>
+<div class="cap">图 5 · Wan2.2 VAE 对称结构：patchify(2×2) + Encoder(空间8×下采样) 把像素压成 48 维 latent；Decoder 对称还原。全程因果卷积 + 分块 + feat_cache，合计空间 16×16、时间 4× 压缩</div>
+</div>
+
+<h3 id="vae-causal">4.1 因果卷积 CausalConv3d</h3>
+<p>视频 VAE 必须保证「当前帧只依赖过去帧」（因果性），否则无法支持流式/分块处理。实现方式是<b>只在时间维左侧 padding</b>：</p>
+<div class="filehdr">vae2_2.py · CausalConv3d</div>
+<pre><code><span class="tok-kw">class</span> <span class="tok-fn">CausalConv3d</span>(nn.Conv3d):
+    <span class="tok-kw">def</span> <span class="tok-fn">__init__</span>(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._padding = (W, W, H, H, <span class="tok-num">2</span>*pad_t, <span class="tok-num">0</span>)  <span class="tok-com"># ★ 时间维只往「过去」pad，右侧=0</span>
+        self.padding = (<span class="tok-num">0</span>, <span class="tok-num">0</span>, <span class="tok-num">0</span>)
+
+    <span class="tok-kw">def</span> <span class="tok-fn">forward</span>(self, x, cache_x=<span class="tok-kw">None</span>):
+        <span class="tok-kw">if</span> cache_x <span class="tok-kw">is</span> <span class="tok-kw">not</span> <span class="tok-kw">None</span>:           <span class="tok-com"># 把上一块的尾帧拼到当前块前面</span>
+            x = torch.cat([cache_x, x], dim=<span class="tok-num">2</span>)
+            padding[<span class="tok-num">4</span>] -= cache_x.shape[<span class="tok-num">2</span>]
+        x = F.pad(x, padding)
+        <span class="tok-kw">return</span> super().forward(x)</code></pre>
+
+<h3 id="vae-chunk">4.2 分块编解码 + 特征缓存</h3>
+<p>为了省显存，VAE 把视频沿时间维<b>分块处理</b>（encode 每 4 帧一块，decode 每 1 个 latent 帧一块），块间用 <code>feat_cache</code> 传递边界帧的卷积中间结果，保证拼接处无缝。</p>
+
+<div class="filehdr">vae2_2.py · WanVAE_.encode（分块循环）</div>
+<pre><code><span class="tok-kw">def</span> <span class="tok-fn">encode</span>(self, x, scale):
+    self.<span class="tok-fn">clear_cache</span>()                       <span class="tok-com"># 重置每个 CausalConv3d 的缓存槽</span>
+    x = <span class="tok-fn">patchify</span>(x, patch_size=<span class="tok-num">2</span>)           <span class="tok-com"># 2×2 像素打包 → 12 通道</span>
+    t = x.shape[<span class="tok-num">2</span>];  iter_ = <span class="tok-num">1</span> + (t-<span class="tok-num">1</span>)//<span class="tok-num">4</span>     <span class="tok-com"># 按 4 帧分块</span>
+    <span class="tok-kw">for</span> i <span class="tok-kw">in</span> range(iter_):
+        out_i = self.<span class="tok-fn">encoder</span>(x[:,:, 块i, :,:], feat_cache=self._enc_feat_map, ...)
+        out = out_i <span class="tok-kw">if</span> i==<span class="tok-num">0</span> <span class="tok-kw">else</span> torch.cat([out, out_i], <span class="tok-num">2</span>)
+    mu, log_var = self.<span class="tok-fn">conv1</span>(out).chunk(<span class="tok-num">2</span>, dim=<span class="tok-num">1</span>)   <span class="tok-com"># 高斯分布参数</span>
+    mu = (mu - scale[<span class="tok-num">0</span>]) * scale[<span class="tok-num">1</span>]               <span class="tok-com"># ★ 用预存的 mean/std 归一化（48维）</span>
+    <span class="tok-kw">return</span> mu                               <span class="tok-com"># 推理只取均值，不采样</span></code></pre>
+
+<div class="tip"><b>scale = [mean, 1/std]：</b> Wan2_2_VAE 在 <code>__init__</code> 里硬编码了 48 维 latent 各通道的均值和标准差（一长串常数）。encode 后做 <code>(mu−mean)/std</code> 把 latent 归一化到标准尺度（利于扩散），decode 前做逆变换。这是 LDM 里「latent 标准化」的标准做法。</div>
+
+<p>编码器/解码器主体是 <b>3D 残差网络</b>：<code>ResidualBlock</code>（双 CausalConv3d + RMSNorm + SiLU）+ <code>AttentionBlock</code>（中间层单头自注意力）+ <code>Resample</code>（上/下采样，含 <code>AvgDown3D</code>/<code>DupUp3D</code> 的 shortcut）。结构对称，encoder 下采样、decoder 上采样。</p>
+
+<hr>
+
+<h2 id="sched"><span class="n">5</span>流匹配调度器</h2>
+<p>文件：<code>wan/utils/fm_solvers_unipc.py</code>（UniPC）和 <code>fm_solvers.py</code>（DPM++）。Wan2.2 用的是 <b>Flow Matching</b> 框架（不是 DDPM），调度器负责给出时间步表、并在每步把 latent 往「干净」方向推进。</p>
+
+<div class="card">
+<b>Flow Matching 直觉：</b> 不像 DDPM 那样预测「加了多少噪声」，FM 学习的是从噪声分布到数据分布的 <b>速度场（velocity）</b>。<code>sigma</code> 从 1（纯噪声）线性降到 0（干净），<code>timestep = sigma × 1000</code>。
+</div>
+
+<div class="filehdr">fm_solvers_unipc.py · set_timesteps 里的 shift（关键超参）</div>
+<pre><code>sigmas = np.<span class="tok-fn">linspace</span>(sigma_max, sigma_min, num_steps)    <span class="tok-com"># 均匀 1→0</span>
+<span class="tok-com"># shift 把采样重心往「高噪声端」偏移，对视频/高分辨率更友好</span>
+sigmas = shift * sigmas / (<span class="tok-num">1</span> + (shift - <span class="tok-num">1</span>) * sigmas)        <span class="tok-com"># shift=5.0</span>
+timesteps = sigmas * num_train_timesteps                     <span class="tok-com"># ×1000</span></code></pre>
+
+<div class="note"><b>shift 的作用：</b> <code>shift=5.0</code> 会把更多采样步数分配到高噪声阶段（视频生成的「大结构」在这里成形）。文档里提到「生成 480p 时建议 shift=3.0」——分辨率越低，shift 应越小。UniPC 是一个<b>多步预测-校正</b>求解器，比朴素 Euler 收敛更快，50 步即可出高质量结果。</div>
+
+<p><code>step()</code> 每步做的事：用 DiT 给出的 <code>noise_pred</code>（速度场）和当前 <code>sigma</code>，外加历史几步的缓存（多步法），解出下一个更干净的 latent。CFG 之后的 <code>noise_pred</code> 就是喂给它的输入。</p>
+
+<hr>
+
+<h2 id="cfg-train"><span class="n">6</span>CFG 与训练/损失 <span class="badge">常见疑问</span></h2>
+<p>这一章回答两个高频问题：<b>① CFG 引导的代码在哪、怎么算？② 损失/训练代码在仓库里吗？</b></p>
+
+<div class="warn"><b>核心结论先行：</b> 本仓库是 <b>纯推理（inference-only）代码库</b>，<u>不包含任何训练或损失计算代码</u>。全仓库搜不到 <code>loss</code> / <code>backward()</code> / <code>optimizer</code> / <code>def train</code>；每个 pipeline 都 <code>model.eval().requires_grad_(False)</code> 且去噪循环全程包在 <code>torch.no_grad()</code> 里。<b>CFG 则是推理时的引导技巧，代码在去噪循环里，确实存在。</b></p></div>
+
+<h3 id="cfg">6.1 CFG 引导代码详解</h3>
+<p><b>CFG = Classifier-Free Guidance（无分类器引导）</b>，是扩散模型推理阶段提升「prompt 贴合度」的标准技巧。它<b>不是训练损失</b>，而是采样时对模型输出做的一次外推。</p>
+
+
+<div class="filehdr">wan/textimage2video.py:380-386 · CFG 三行核心</div>
+<pre><code><span class="tok-com"># 每步把 DiT 前向跑两次：一次「看到 prompt」，一次「看到负向/空 prompt」</span>
+noise_pred_cond   = self.model(latent_model_input, t=timestep, **arg_c)[<span class="tok-num">0</span>]     <span class="tok-com"># 条件: context = 真实 prompt</span>
+noise_pred_uncond = self.model(latent_model_input, t=timestep, **arg_null)[<span class="tok-num">0</span>]  <span class="tok-com"># 无条件: context_null = 负向 prompt</span>
+
+<span class="tok-com"># ★ CFG 外推：沿「条件 − 无条件」方向放大 guide_scale 倍</span>
+noise_pred = noise_pred_uncond + guide_scale * (noise_pred_cond - noise_pred_uncond)</code></pre>
+
+<div class="fig">
+<svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" font-size="12.5">
+  <defs>
+    <marker id="c1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#4ea1ff"/></marker>
+    <marker id="c2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#ff7b9c"/></marker>
+    <marker id="c3" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#7ee787"/></marker>
+  </defs>
+
+  <!-- latent input -->
+  <rect x="30" y="130" width="120" height="56" rx="8" fill="#1c2330" stroke="#d7e0ea"/>
+  <text x="90" y="153" fill="#d7e0ea" text-anchor="middle">当前 latent x_t</text>
+  <text x="90" y="171" fill="#9aa7b5" text-anchor="middle" font-size="10.5">+ 时间步 t</text>
+
+  <!-- two forwards -->
+  <rect x="240" y="50" width="200" height="66" rx="8" fill="#16213a" stroke="#4ea1ff"/>
+  <text x="340" y="74" fill="#4ea1ff" text-anchor="middle" font-weight="bold">DiT 前向 ①</text>
+  <text x="340" y="92" fill="#9aa7b5" text-anchor="middle" font-size="11">context = 真实 prompt</text>
+  <text x="340" y="107" fill="#d7e0ea" text-anchor="middle" font-size="11">→ noise_pred_cond</text>
+
+  <rect x="240" y="200" width="200" height="66" rx="8" fill="#16213a" stroke="#ff7b9c"/>
+  <text x="340" y="224" fill="#ff7b9c" text-anchor="middle" font-weight="bold">DiT 前向 ②</text>
+  <text x="340" y="242" fill="#9aa7b5" text-anchor="middle" font-size="11">context_null = 负向 prompt</text>
+  <text x="340" y="257" fill="#d7e0ea" text-anchor="middle" font-size="11">→ noise_pred_uncond</text>
+
+  <!-- combine -->
+  <rect x="520" y="120" width="210" height="78" rx="8" fill="#161b22" stroke="#7ee787" stroke-width="2"/>
+  <text x="625" y="143" fill="#7ee787" text-anchor="middle" font-weight="bold">CFG 外推</text>
+  <text x="625" y="163" fill="#d7e0ea" text-anchor="middle" font-size="11">uncond + s·(cond − uncond)</text>
+  <text x="625" y="181" fill="#9aa7b5" text-anchor="middle" font-size="10.5">s = guide_scale = 5.0</text>
+  <text x="625" y="194" fill="#9aa7b5" text-anchor="middle" font-size="10">→ 喂给 scheduler.step()</text>
+
+  <!-- arrows -->
+  <path d="M150,150 C190,150 200,90 238,86" fill="none" stroke="#4ea1ff" marker-end="url(#c1)"/>
+  <path d="M150,166 C190,166 200,228 238,232" fill="none" stroke="#ff7b9c" marker-end="url(#c2)"/>
+  <path d="M440,86 C480,86 490,150 518,155" fill="none" stroke="#4ea1ff" marker-end="url(#c1)"/>
+  <path d="M440,232 C480,232 490,168 518,163" fill="none" stroke="#ff7b9c" marker-end="url(#c2)"/>
+
+  <!-- intuition -->
+  <text x="380" y="300" fill="#9aa7b5" text-anchor="middle" font-size="11">同一个 latent、同一套权重，仅 context 不同 → 跑两次 → 沿「贴合 prompt 的方向」放大</text>
+</svg>
+<div class="cap">图 6 · CFG（Classifier-Free Guidance）机制：每个去噪步把 DiT 前向跑两次（条件 / 无条件），再沿两者之差外推 s 倍。这是「prompt 贴合度」的来源，也是推理耗时翻倍的原因</div>
+</div>
+
+<h4>数学形式与直觉</h4>
+<div class="card">
+设模型在时间步 t、给定条件 c 时的预测为 <code>v_θ(x_t, t, c)</code>，则 CFG 的引导预测为：
+<pre style="margin-top:10px"><code>v_guided = v_θ(x_t, t, ∅)  +  s · [ v_θ(x_t, t, c) − v_θ(x_t, t, ∅) ]
+         └─ 无条件(空/负向) ─┘     └────── 条件相对无条件多出来的「方向」──────┘
+                                  s = guide_scale (TI2V 默认 5.0)</code></pre>
+<ul>
+<li><b>s = 1</b>：退化为普通条件采样（没有额外引导）。</li>
+<li><b>s &gt; 1</b>：放大 prompt 的影响，越大越贴合文字，但过大会过饱和/失真。TI2V-5B 默认 <code>5.0</code>。</li>
+<li><b>「无条件」用的是负向 prompt</b>（<code>context_null</code> = config 里那串中文负向提示词，如「过曝、模糊、畸形…」），所以 CFG 同时起到「靠近正向、远离负向」的双重作用。</li>
+</ul>
+</div>
+
+<div class="note"><b>代价：每步两次 DiT 前向。</b> 这是推理耗时的主要来源——50 步实际是 100 次 DiT 前向。这也是为什么 <code>offload_model</code> 模式下会在两次前向之间 <code>torch.cuda.empty_cache()</code>（见 i2v 分支 583/587 行）。</div>
+
+<div class="tip"><b>A14B（MoE）的差异：</b> <code>guide_scale</code> 是一个 <code>(low, high)</code> 元组。<code>text2video.py:343</code> 里按时间步选用：高噪声阶段用 <code>guide_scale[1]</code>（high-noise 专家），低噪声阶段用 <code>guide_scale[0]</code>。TI2V-5B 是稠密单模型，全程一个标量 5.0。</div>
+
+<h3 id="train">6.2 损失计算 （该仓库仅推理）</h3>
+
+<h4>真实训练损失：Flow Matching MSE</h4>
+<p>从调度器能反推出训练目标。Wan2.2 用 <b>Flow Matching</b>，调度器里写死了 <code>prediction_type="flow_prediction"</code>：</p>
+
+<div class="filehdr">fm_solvers_unipc.py:317-322 · 模型输出的含义（反推损失）</div>
+<pre><code>sigma_t = self.sigmas[self.step_index]
+<span class="tok-kw">if</span> self.config.prediction_type == <span class="tok-str">"flow_prediction"</span>:
+    x0_pred = sample - sigma_t * model_output     <span class="tok-com"># ★ model_output 是「速度场 v」</span></code></pre>
+
+<p>由 <code>x0 = x_t − σ_t·v</code> 反推：模型输出的 <code>v</code> 就是从干净数据指向噪声的<b>速度场</b>。对应的训练损失是标准的 Flow Matching（Rectified Flow）MSE：</p>
+
+<div class="card">
+<pre><code><span class="tok-com"># 训练时（不在本仓库，仅示意）：</span>
+x_0   = VAE.encode(真实视频)              <span class="tok-com"># 干净 latent</span>
+noise = randn_like(x_0)                   <span class="tok-com"># 高斯噪声</span>
+σ_t   ~ 采样一个 (0,1) 的噪声水平
+x_t   = (1 − σ_t) · x_0  +  σ_t · noise   <span class="tok-com"># 线性插值构造带噪样本</span>
+
+v_target = noise − x_0                    <span class="tok-com"># 真实速度场（从 x_0 指向 noise）</span>
+v_pred   = WanModel(x_t, t, context)      <span class="tok-com"># 模型预测</span>
+
+L = ‖ v_pred − v_target ‖²               <span class="tok-com"># ★ Flow Matching MSE 损失</span></code></pre>
+</div>
+
+<div class="note"><b>推理与训练的对应关系：</b> 推理时调度器拿到的 <code>noise_pred</code>（CFG 之后的 <code>v_guided</code>）就扮演训练时 <code>v_pred</code> 的角色——只不过推理时不再算 loss，而是用 <code>x0_pred = x_t − σ_t·v</code> 把 latent 往干净方向推进一步（UniPC <code>step()</code>）。理解了这一点，训练和推理就闭环了。</div>
+
+
+<h2 id="a14b"><span class="n">7</span>A14B 系列：MoE 双专家 <span class="badge">进阶</span></h2>
+<p>前面用 TI2V-5B 把整套框架讲透了。<b>t2v-A14B 在主干上完全复用同一个 <code>WanModel</code>，只是把它的「容量」和「调度方式」升级成了 MoE 双专家。</b>本章只讲它与主线的<b>差异点</b>——读懂差异即读懂 A14B。</p>
+
+<div class="card">
+<b>三句话概括 A14B 的不同：</b>
+<ol style="margin:6px 0">
+<li><b>更大的稠密 DiT</b>：<code>dim=5120, num_layers=40, num_heads=40</code>（TI2V 是 3072/30/24）。</li>
+<li><b>两个 DiT 专家</b>：<code>high_noise_model</code> + <code>low_noise_model</code>，按扩散时间步在 <code>boundary</code> 处切换——这就是「27B 总参 / 14B 激活」的 MoE 含义。</li>
+<li><b>用 Wan2.1 VAE</b>（压缩比 4×8×8，比 TI2V 的 4×16×16 低），所以 latent 更大、<code>in_dim=16</code> 而非 48。</li>
+</ol>
+</div>
+
+<h3 id="a14b-cmp">7.1 配置与结构对比</h3>
+<p>把 t2v-A14B 与主线 ti2v-5B 的关键超参并排看，差异一目了然（数据来自 <code>configs/wan_t2v_A14B.py</code> 与 <code>wan_ti2v_5B.py</code>）：</p>
+
+<table>
+<tr><th>超参</th><th>ti2v-5B（主线）</th><th>t2v-A14B</th></tr>
+<tr><td>pipeline 类</td><td>WanTI2V</td><td>WanT2V</td></tr>
+<tr><td>DiT 结构</td><td>稠密单模型</td><td><b>MoE 双专家（high+low）</b></td></tr>
+<tr><td><code>dim</code></td><td>3072</td><td><b>5120</b></td></tr>
+<tr><td><code>num_layers</code></td><td>30</td><td><b>40</b></td></tr>
+<tr><td><code>num_heads</code></td><td>24</td><td><b>40</b></td></tr>
+<tr><td><code>ffn_dim</code></td><td>14336</td><td>13824</td></tr>
+<tr><td>VAE</td><td>2.2 (4×16×16)</td><td>2.1 (4×8×8)</td></tr>
+<tr><td>latent 通道 <code>in_dim</code></td><td>48</td><td>16</td></tr>
+<tr><td><code>boundary</code></td><td>—（无切换）</td><td><b>0.875</b></td></tr>
+<tr><td><code>sample_guide_scale</code></td><td>5.0（标量）</td><td><b>(3.0, 4.0)</b></td></tr>
+<tr><td><code>sample_shift</code></td><td>5.0</td><td>12.0</td></tr>
+<tr><td><code>sample_steps</code></td><td>50</td><td>40</td></tr>
+</table>
+
+<div class="note"><b>「MoE」在这里的确切含义：</b> 不是层内的专家路由（如 Mixtral 那种 token 级 FFN 路由），而是<b>整模型级的两个专家按扩散阶段分工</b>——高噪声阶段（去噪早期，搭大结构）用 high-noise 专家，低噪声阶段（去噪后期，雕细节）用 low-noise 专家。每一步只激活其中一个，所以「总参 27B、单步激活 14B」。</div>
+
+<h3 id="a14b-moe">7.2 双专家加载与时间步切换</h3>
+<p><b>加载：</b> pipeline 的 <code>__init__</code> 里用 <code>from_pretrained(..., subfolder=...)</code> 加载两个子目录的权重（<code>text2video.py:101-117</code>）：</p>
+
+<div class="filehdr">wan/text2video.py · 加载两个专家</div>
+<pre><code>self.low_noise_model  = WanModel.<span class="tok-fn">from_pretrained</span>(checkpoint_dir, subfolder=<span class="tok-str">'low_noise_model'</span>)
+self.high_noise_model = WanModel.<span class="tok-fn">from_pretrained</span>(checkpoint_dir, subfolder=<span class="tok-str">'high_noise_model'</span>)
+self.boundary = config.boundary    <span class="tok-com"># t2v: 0.875，i2v: 0.900</span></code></pre>
+
+<p><b>切换：</b> 每个去噪步先根据当前时间步 <code>t</code> 选择专家，并（在 offload 模式下）把不用的那个换出显存（<code>_prepare_model_for_timestep</code>）：</p>
+
+<div class="filehdr">wan/text2video.py:186-201 · 按 boundary 选专家 + 换显存</div>
+<pre><code><span class="tok-kw">def</span> <span class="tok-fn">_prepare_model_for_timestep</span>(self, t, boundary, offload_model):
+    <span class="tok-kw">if</span> t.item() &gt;= boundary:                 <span class="tok-com"># 高噪声阶段</span>
+        required_model_name = <span class="tok-str">'high_noise_model'</span>
+        offload_model_name  = <span class="tok-str">'low_noise_model'</span>
+    <span class="tok-kw">else</span>:                                    <span class="tok-com"># 低噪声阶段</span>
+        required_model_name = <span class="tok-str">'low_noise_model'</span>
+        offload_model_name  = <span class="tok-str">'high_noise_model'</span>
+    <span class="tok-kw">if</span> offload_model <span class="tok-kw">or</span> self.init_on_cpu:        <span class="tok-com"># 把不用的专家挪到 CPU，用到的挪到 GPU</span>
+        <span class="tok-fn">getattr</span>(self, offload_model_name).<span class="tok-fn">to</span>(<span class="tok-str">'cpu'</span>)
+        <span class="tok-fn">getattr</span>(self, required_model_name).<span class="tok-fn">to</span>(self.device)
+    <span class="tok-kw">return</span> <span class="tok-fn">getattr</span>(self, required_model_name)</code></pre>
+
+<div class="filehdr">wan/text2video.py:335-360 · A14B 去噪主循环（与 TI2V 的差异点）</div>
+<pre><code>boundary = self.boundary * self.num_train_timesteps    <span class="tok-com"># 0.875 × 1000 = 875</span>
+<span class="tok-kw">for</span> t <span class="tok-kw">in</span> tqdm(timesteps):
+    <span class="tok-com"># ★ 差异1：每步动态选专家</span>
+    model = self.<span class="tok-fn">_prepare_model_for_timestep</span>(t, boundary, offload_model)
+    <span class="tok-com"># ★ 差异2：guide_scale 按阶段取元组的不同分量</span>
+    sample_guide_scale = guide_scale[<span class="tok-num">1</span>] <span class="tok-kw">if</span> t.item() &gt;= boundary <span class="tok-kw">else</span> guide_scale[<span class="tok-num">0</span>]
+
+    noise_pred_cond   = model(latent_model_input, t=timestep, **arg_c)[<span class="tok-num">0</span>]
+    noise_pred_uncond = model(latent_model_input, t=timestep, **arg_null)[<span class="tok-num">0</span>]
+    noise_pred = noise_pred_uncond + sample_guide_scale * (noise_pred_cond - noise_pred_uncond)
+    <span class="tok-com"># scheduler.step() 之后与 TI2V 完全一致</span></code></pre>
+
+<div class="fig">
+<svg viewBox="0 0 820 360" xmlns="http://www.w3.org/2000/svg" font-size="12.5">
+  <defs>
+    <marker id="m1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#ff7b9c"/></marker>
+    <marker id="m2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#4ea1ff"/></marker>
+    <marker id="m3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#7ee787"/></marker>
+  </defs>
+
+  <!-- timeline -->
+  <text x="410" y="28" fill="#d7e0ea" text-anchor="middle" font-weight="bold">扩散时间步轴 t：1000 (纯噪声) ───────────► 0 (干净)</text>
+  <line x1="60" y1="48" x2="760" y2="48" stroke="#2a3340" stroke-width="2"/>
+  <!-- boundary -->
+  <line x1="300" y1="40" x2="300" y2="300" stroke="#ffb454" stroke-dasharray="5 4"/>
+  <text x="300" y="320" fill="#ffb454" text-anchor="middle" font-size="11">boundary = 0.875×1000 = 875</text>
+
+  <!-- high noise zone -->
+  <rect x="60" y="60" width="240" height="120" rx="10" fill="#2a1a22" stroke="#ff7b9c"/>
+  <text x="180" y="84" fill="#ff7b9c" text-anchor="middle" font-weight="bold">t ≥ boundary（高噪声）</text>
+  <rect x="86" y="98" width="188" height="44" rx="7" fill="#1c2330" stroke="#ff7b9c"/>
+  <text x="180" y="118" fill="#ff7b9c" text-anchor="middle">high_noise_model</text>
+  <text x="180" y="133" fill="#9aa7b5" text-anchor="middle" font-size="10.5">搭大结构 / 整体运动</text>
+  <text x="180" y="164" fill="#9aa7b5" text-anchor="middle" font-size="10.5">guide_scale[1]（如 4.0）</text>
+
+  <!-- low noise zone -->
+  <rect x="300" y="60" width="460" height="120" rx="10" fill="#13241a" stroke="#7ee787"/>
+  <text x="530" y="84" fill="#7ee787" text-anchor="middle" font-weight="bold">t &lt; boundary（低噪声）</text>
+  <rect x="420" y="98" width="220" height="44" rx="7" fill="#1c2330" stroke="#7ee787"/>
+  <text x="530" y="118" fill="#7ee787" text-anchor="middle">low_noise_model</text>
+  <text x="530" y="133" fill="#9aa7b5" text-anchor="middle" font-size="10.5">雕细节 / 纹理清晰度</text>
+  <text x="530" y="164" fill="#9aa7b5" text-anchor="middle" font-size="10.5">guide_scale[0]（如 3.0）</text>
+
+  <!-- shared parts -->
+  <rect x="160" y="218" width="200" height="70" rx="8" fill="#16213a" stroke="#4ea1ff"/>
+  <text x="260" y="240" fill="#4ea1ff" text-anchor="middle">共享：T5 / VAE / 调度器</text>
+  <text x="260" y="258" fill="#9aa7b5" text-anchor="middle" font-size="10.5">两个专家结构完全相同</text>
+  <text x="260" y="272" fill="#9aa7b5" text-anchor="middle" font-size="10.5">dim 5120 · 40 层 · 40 头</text>
+
+  <rect x="470" y="218" width="250" height="70" rx="8" fill="#16213a" stroke="#ffb454"/>
+  <text x="595" y="240" fill="#ffb454" text-anchor="middle">offload 时只驻留 1 个专家</text>
+  <text x="595" y="258" fill="#9aa7b5" text-anchor="middle" font-size="10.5">用到的→GPU，另一个→CPU</text>
+  <text x="595" y="272" fill="#9aa7b5" text-anchor="middle" font-size="10.5">= 总参 27B / 单步激活 14B</text>
+
+  <path d="M180,180 L180,216" stroke="#ff7b9c" marker-end="url(#m1)"/>
+  <path d="M530,180 L530,216" stroke="#7ee787" marker-end="url(#m3)"/>
+</svg>
+<div class="cap">图 7 · A14B 的 MoE 双专家调度：以扩散时间步 boundary（t2v=875）为界，高噪声步用 high-noise 专家、低噪声步用 low-noise 专家，CFG 强度也随之切换；offload 模式下显存里只常驻当前专家</div>
+</div>
+
+<div class="tip"><b>小结：A14B = 「更大的 WanModel ×2 + 时间步路由 + 元组 guide_scale」。</b> 主干、注意力、RoPE、调度器、CFG 外推公式、显存三板斧全部与主线一致。掌握了 TI2V-5B，再加上本章的差异点，t2v-A14B 就完全打通了。s2v/animate 则是在此之上再叠加音频编码器 / 姿态-人脸模块的「加料」。</div>
+
+<hr>
+
+<h2 id="dist"><span class="n">8</span>分布式：FSDP + Ulysses 序列并行</h2>
+<p>文件：<code>wan/distributed/</code>。单卡能跑 TI2V-5B，但多卡能近线性加速。两种正交的并行策略：</p>
+
+<table>
+<tr><th>策略</th><th>开关</th><th>切什么</th><th>解决什么</th></tr>
+<tr><td><b>FSDP</b><br>(全分片数据并行)</td><td><code>--dit_fsdp</code><br><code>--t5_fsdp</code></td><td>切<b>模型参数</b>到各卡</td><td>单卡放不下大模型 → 省显存</td></tr>
+<tr><td><b>Ulysses</b><br>(序列并行)</td><td><code>--ulysses_size N</code></td><td>切<b>序列长度</b>(27280个token)到各卡</td><td>加速注意力 → 提速</td></tr>
+</table>
+
+<div class="filehdr">textimage2video.py · 用 monkey-patch 注入序列并行</div>
+<pre><code><span class="tok-kw">if</span> use_sp:                                  <span class="tok-com"># 把每个 Block 的注意力和整个 forward 替换成 SP 版本</span>
+    <span class="tok-kw">for</span> block <span class="tok-kw">in</span> model.blocks:
+        block.self_attn.forward = types.<span class="tok-fn">MethodType</span>(sp_attn_forward, block.self_attn)
+    model.forward = types.<span class="tok-fn">MethodType</span>(sp_dit_forward, model)</code></pre>
+
+<div class="filehdr">distributed/sequence_parallel.py · sp_dit_forward 核心</div>
+<pre><code><span class="tok-com"># 每张卡只持有 1/N 的序列</span>
+x  = torch.<span class="tok-fn">chunk</span>(x,  get_world_size(), dim=<span class="tok-num">1</span>)[get_rank()]
+<span class="tok-com"># 自注意力时通过 all-to-all 通信交换，使每卡看到全序列但只算 1/N 的 head（Ulysses 思想）</span>
+x = <span class="tok-fn">distributed_attention</span>(q, k, v, seq_lens, window_size=...)
+<span class="tok-com"># 算完 head 后再 gather 回完整序列</span>
+x = <span class="tok-fn">gather_forward</span>(x, dim=<span class="tok-num">1</span>)</code></pre>
+
+<div class="warn"><b>约束：</b><code>--ulysses_size</code> 必须 <b>等于进程数（world size）</b> 且能 <b>整除 num_heads</b>。TI2V-5B 的 <code>num_heads=24</code>，所以 ulysses_size 可取 2/3/4/6/8。8 卡跑 720p 时 <code>--ulysses_size 8</code> 合法（24÷8=3）。</div>
+
+<hr>
+
+<h2 id="run"><span class="n">10</span>实战运行命令</h2>
+
+<h4>单卡冒烟测试（快速验证环境）</h4>
+<pre><code><span class="tok-kw">export</span> TOKENIZERS_PARALLELISM=false
+CKPT=/path/to/hf_download/Wan2.2-TI2V-5B
+
+python generate.py \
+  --task ti2v-5B --size <span class="tok-str">'1280*704'</span> --ckpt_dir <span class="tok-str">"$CKPT"</span> \
+  --convert_model_dtype --base_seed <span class="tok-num">42</span> \
+  --frame_num <span class="tok-num">25</span> --sample_steps <span class="tok-num">15</span> \           <span class="tok-com"># 调小加快</span>
+  --save_file outputs/ti2v_smoke.mp4 \
+  --prompt <span class="tok-str">"两只在打架的猫"</span></code></pre>
+
+<h4>单卡全质量（121帧 / 50步 / 约5秒视频）</h4>
+<pre><code>python generate.py \
+  --task ti2v-5B --size <span class="tok-str">'1280*704'</span> --ckpt_dir <span class="tok-str">"$CKPT"</span> \
+  --convert_model_dtype --base_seed <span class="tok-num">42</span> \
+  --save_file outputs/ti2v_cats_full.mp4 \
+  --prompt <span class="tok-str">"两只在打架的猫"</span>
+  <span class="tok-com"># 图生视频：追加 --image examples/i2v_input.JPG</span></code></pre>
+
+<h4>8 卡加速（FSDP + Ulysses，推荐）</h4>
+<pre><code>torchrun --nproc_per_node=<span class="tok-num">8</span> generate.py \
+  --task ti2v-5B --size <span class="tok-str">'1280*704'</span> --ckpt_dir <span class="tok-str">"$CKPT"</span> \
+  --dit_fsdp --t5_fsdp --ulysses_size <span class="tok-num">8</span> --base_seed <span class="tok-num">42</span> \
+  --save_file outputs/ti2v_cats_8gpu.mp4 \
+  --prompt <span class="tok-str">"两只在打架的猫"</span></code></pre>
+
+<h4>A14B 系列（MoE 双专家）运行命令</h4>
+<pre><code><span class="tok-com"># 文生视频 t2v-A14B（ckpt 目录须含 low_noise_model/ high_noise_model/ 两个子目录）</span>
+python generate.py --task t2v-A14B --size <span class="tok-str">'1280*720'</span> \
+  --ckpt_dir ./Wan2.2-T2V-A14B --offload_model True --convert_model_dtype \
+  --prompt <span class="tok-str">"..."</span>
+
+<span class="tok-com"># 8 卡加速（num_heads=40，ulysses_size 须整除 40，可取 2/4/5/8）</span>
+torchrun --nproc_per_node=<span class="tok-num">8</span> generate.py --task t2v-A14B --size <span class="tok-str">'1280*720'</span> \
+  --ckpt_dir ./Wan2.2-T2V-A14B --dit_fsdp --t5_fsdp --ulysses_size <span class="tok-num">8</span> --prompt <span class="tok-str">"..."</span></code></pre>
+<div class="warn"><b>A14B 的 size 与 TI2V 不同：</b> 支持 <code>720*1280 / 1280*720 / 480*832 / 832*480</code>（见 <code>SUPPORTED_SIZES</code>）。注意 A14B 的 <code>num_heads=40</code>，所以 <code>--ulysses_size</code> 合法值是 2/4/5/8（须整除 40），与 TI2V 的 24 不同。</div>
+
+<details>
+<summary>常用参数速查表</summary>
+<table>
+<tr><th>参数</th><th>说明</th></tr>
+<tr><td><code>--size '1280*704'</code></td><td>分辨率（ti2v-5B 仅支持 1280*704 / 704*1280）</td></tr>
+<tr><td><code>--frame_num</code></td><td>帧数，必须是 4n+1（默认 121）</td></tr>
+<tr><td><code>--sample_steps</code></td><td>采样步数（默认 50，越多越精细越慢）</td></tr>
+<tr><td><code>--sample_shift</code></td><td>噪声调度偏移（默认 5.0；480p 建议 3.0）</td></tr>
+<tr><td><code>--sample_guide_scale</code></td><td>CFG 强度（默认 5.0）</td></tr>
+<tr><td><code>--base_seed</code></td><td>随机种子（固定可复现）</td></tr>
+<tr><td><code>--use_prompt_extend</code></td><td>用 Qwen/DashScope 自动扩写 prompt</td></tr>
+</table>
+</details>
+
+<hr>
+
+<h2 id="glossary"><span class="n">11</span>术语表</h2>
+
+<h3>核心术语</h3>
+<table>
+<tr><th>术语</th><th>含义</th></tr>
+<tr><td><b>Latent / latent 空间</b></td><td>VAE 压缩后的低维表示。TI2V 把 1280×704×121 像素压成 80×44×31×48 的张量，扩散在这个小空间里进行，省算力。</td></tr>
+<tr><td><b>DiT</b></td><td>Diffusion Transformer，用 Transformer 替代 U-Net 做扩散去噪主干。Wan 的 WanModel 即 DiT。</td></tr>
+<tr><td><b>Flow Matching</b></td><td>一类生成式框架，学习从噪声到数据的速度场，sigma 从 1→0。比 DDPM 采样更高效。</td></tr>
+<tr><td><b>CFG</b></td><td>Classifier-Free Guidance，用「条件 vs 无条件」预测之差放大 prompt 影响。每步两次前向。</td></tr>
+<tr><td><b>AdaLN-Zero</b></td><td>时间步通过调制向量（shift/scale/gate）控制每个 Block 的归一化，是 DiT 注入条件的标准方式。</td></tr>
+<tr><td><b>RoPE (3D)</b></td><td>旋转位置编码，这里按帧/高/宽三轴分别编码，给注意力提供三维位置感。</td></tr>
+<tr><td><b>MoE 双专家</b></td><td>A14B 任务有 high-noise / low-noise 两个 DiT，按时间步 boundary 切换（TI2V-5B 不用，是稠密单模型）。</td></tr>
+<tr><td><b>FSDP / Ulysses</b></td><td>分别切「模型参数」/「序列长度」的两种多卡并行，可叠加使用。</td></tr>
+</table>
+
+</main>
+</div>
+</body>
+</html>
