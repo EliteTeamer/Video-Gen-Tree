@@ -965,8 +965,6 @@ timesteps = sigmas * num_train_timesteps                     <span class="tok-co
 <h2 id="cfg-train"><span class="n">6</span>CFG 与训练/损失 <span class="badge">常见疑问</span></h2>
 <p>这一章回答两个高频问题：<b>① CFG 引导的代码在哪、怎么算？② 损失/训练代码在仓库里吗？</b></p>
 
-<div class="warn"><b>核心结论先行：</b> 本仓库是 <b>纯推理（inference-only）代码库</b>，<u>不包含任何训练或损失计算代码</u>。全仓库搜不到 <code>loss</code> / <code>backward()</code> / <code>optimizer</code> / <code>def train</code>；每个 pipeline 都 <code>model.eval().requires_grad_(False)</code> 且去噪循环全程包在 <code>torch.no_grad()</code> 里。<b>CFG 则是推理时的引导技巧，代码在去噪循环里，确实存在。</b></p></div>
-
 <h3 id="cfg">6.1 CFG 引导代码详解</h3>
 <p><b>CFG = Classifier-Free Guidance（无分类器引导）</b>，是扩散模型推理阶段提升「prompt 贴合度」的标准技巧。它<b>不是训练损失</b>，而是采样时对模型输出做的一次外推。</p>
 
@@ -1183,8 +1181,6 @@ self.boundary = config.boundary    <span class="tok-com"># t2v: 0.875，i2v: 0.9
 </svg>
 <div class="cap">图 7 · A14B 的 MoE 双专家调度：以扩散时间步 boundary（t2v=875）为界，高噪声步用 high-noise 专家、低噪声步用 low-noise 专家，CFG 强度也随之切换；offload 模式下显存里只常驻当前专家</div>
 </div>
-
-<div class="tip"><b>小结：A14B = 「更大的 WanModel ×2 + 时间步路由 + 元组 guide_scale」。</b> 主干、注意力、RoPE、调度器、CFG 外推公式、显存三板斧全部与主线一致。掌握了 TI2V-5B，再加上本章的差异点，t2v-A14B 就完全打通了。s2v/animate 则是在此之上再叠加音频编码器 / 姿态-人脸模块的「加料」。</div>
 
 <hr>
 
