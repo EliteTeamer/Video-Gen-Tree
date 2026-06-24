@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+【【<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -83,6 +83,26 @@
   .fig .cap{text-align:center;color:var(--fg2);font-size:12.5px;margin-top:12px;line-height:1.5}
   .fig text{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
   .fig .mono{font-family:"SF Mono",Consolas,monospace}
+  /* clickable figure modules (图 2) */
+  .hot{cursor:pointer;fill:transparent;stroke:transparent;transition:fill .12s,stroke .12s}
+  .hot:hover{fill:rgba(126,231,135,.14);stroke:#7ee787;stroke-width:1.5}
+  .hot.active{fill:rgba(78,161,255,.16);stroke:#4ea1ff;stroke-width:2}
+  .clickhint{color:var(--accent2);font-size:12.5px;margin:10px 0 0;text-align:center}
+  .clickhint b{color:#fff}
+  .codewrap{margin-top:12px}
+  .codepanel{display:none;border:1px solid var(--accent);border-radius:10px;margin-top:10px;overflow:hidden}
+  .codepanel.show{display:block;animation:fadein .18s ease}
+  @keyframes fadein{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  .codepanel .ph{display:flex;justify-content:space-between;align-items:center;gap:12px;
+    background:var(--bg3);padding:8px 14px;border-bottom:1px solid var(--border);font-size:13px;flex-wrap:wrap}
+  .codepanel .ph .nm{color:var(--accent);font-weight:600}
+  .codepanel .ph .fp{color:var(--fg2);font-family:monospace;font-size:11.5px}
+  .codepanel .cls{cursor:pointer;color:var(--fg2);border:1px solid var(--border);border-radius:6px;
+    padding:1px 9px;font-size:12px;background:var(--bg2);user-select:none}
+  .codepanel .cls:hover{color:#fff;border-color:var(--pink)}
+  .codepanel pre{margin:0;border:none;border-radius:0;max-height:520px}
+  .codepanel .more{background:var(--bg3);border-top:1px solid var(--border);padding:9px 14px;font-size:13px}
+  .codepanel .more a{color:var(--accent2)}
   @media(max-width:900px){nav.side{display:none}main{padding:24px}}
 </style>
 </head>
@@ -109,6 +129,7 @@
     <li><a href="#vae-causal">4.1 因果卷积与缓存</a></li>
     <li><a href="#vae-chunk">4.2 分块编解码</a></li>
     <li><a class="grp" href="#sched">5 · 流匹配调度器</a></li>
+    <li><a href="#unipc">5.1 UniPC 求解器逻辑</a></li>
     <li><a class="grp" href="#cfg-train">6 · CFG 与训练/损失</a></li>
     <li><a href="#cfg">6.1 CFG 引导代码详解</a></li>
     <li><a href="#train">6.2 损失计算</a></li>
@@ -463,7 +484,29 @@ ti2v_5B.frame_num    = <span class="tok-num">121</span>         <span class="tok
   <path d="M460,584 C450,598 445,600 435,608" fill="none" stroke="#7ee787" marker-end="url(#f2)"/>
   <!-- VAE → save -->
   <line x1="570" y1="638" x2="624" y2="638" stroke="#ffb454" marker-end="url(#f4)"/>
+
+  <!-- ===== 可点击热区（透明覆盖层，点击展开对应源码）===== -->
+  <g id="fig2-hot">
+    <rect class="hot" data-mod="text-enc"   x="24"  y="44"  width="252" height="60"  rx="8"/>
+    <rect class="hot" data-mod="noise"      x="24"  y="150" width="252" height="56"  rx="8"/>
+    <rect class="hot" data-mod="shape"      x="24"  y="252" width="252" height="104" rx="8"/>
+    <rect class="hot" data-mod="patch"      x="334" y="132" width="150" height="40"  rx="6"/>
+    <rect class="hot" data-mod="self-attn"  x="556" y="132" width="306" height="40"  rx="6"/>
+    <rect class="hot" data-mod="text-emb"   x="334" y="184" width="150" height="40"  rx="6"/>
+    <rect class="hot" data-mod="cross-attn" x="556" y="184" width="306" height="40"  rx="6"/>
+    <rect class="hot" data-mod="time-mlp"   x="334" y="236" width="150" height="40"  rx="6"/>
+    <rect class="hot" data-mod="adaln"      x="556" y="236" width="306" height="40"  rx="6"/>
+    <rect class="hot" data-mod="blocks"     x="334" y="290" width="528" height="34"  rx="6"/>
+    <rect class="hot" data-mod="noise-pred" x="334" y="332" width="528" height="34"  rx="6"/>
+    <rect class="hot" data-mod="cfg"        x="360" y="410" width="476" height="38"  rx="7"/>
+    <rect class="hot" data-mod="scheduler"  x="360" y="458" width="476" height="44"  rx="7"/>
+    <rect class="hot" data-mod="vae-decode" x="300" y="610" width="270" height="56"  rx="8"/>
+    <rect class="hot" data-mod="save"       x="626" y="610" width="270" height="56"  rx="8"/>
+    <rect class="hot" data-mod="i2v"        x="24"  y="700" width="872" height="80"  rx="10"/>
+  </g>
 </svg>
+<p class="clickhint">💡 <b>点击图中任意模块</b>，下方会展开它对应的源码（真实仓库代码）。再次点击或按关闭按钮收起。</p>
+<div class="codewrap" id="fig2-code"></div>
 <div class="cap">图 2 · TI2V-5B 生成全流程（t2v，1280×704×121帧）。<b>重点看 DiT 内部三路接线</b>：噪声 latent 经 patch_embedding 变成 token 进 <b>Self-Attention</b>(作 Q/K/V)；文本 context 经 text_embedding 进 <b>Cross-Attention</b>(作 K/V)；时间步经 MLP 生成 <b>AdaLN 调制</b>注入各 Block。调度器只接收 DiT 输出的 noise_pred，不直接吃文本/初始噪声。</div>
 </div>
 
@@ -652,8 +695,34 @@ videos = self.vae.<span class="tok-fn">decode</span>(latents)        <span class
   <line x1="555" y1="400" x2="555" y2="422" stroke="#7ee787" marker-end="url(#d1)"/>
   <!-- head to output -->
   <path d="M680,444 C710,444 760,330 795,312" fill="none" stroke="#ff7b9c" marker-end="url(#d2)"/>
+
+  <!-- ===== 可点击热区（透明覆盖层）===== -->
+  <g id="fig3-hot">
+    <rect class="hot" data-mod="latent-in"  x="20"  y="30"  width="150" height="52" rx="8"/>
+    <rect class="hot" data-mod="t-in"        x="20"  y="234" width="150" height="52" rx="8"/>
+    <rect class="hot" data-mod="ctx-in"      x="20"  y="410" width="150" height="52" rx="8"/>
+    <rect class="hot" data-mod="patch"       x="215" y="28"  width="160" height="56" rx="8"/>
+    <rect class="hot" data-mod="time-emb"    x="215" y="232" width="160" height="56" rx="8"/>
+    <rect class="hot" data-mod="text-emb"    x="215" y="408" width="160" height="56" rx="8"/>
+    <rect class="hot" data-mod="blocks"      x="430" y="120" width="250" height="32" rx="12"/>
+    <rect class="hot" data-mod="self-attn"   x="452" y="158" width="206" height="46" rx="7"/>
+    <rect class="hot" data-mod="cross-attn"  x="452" y="214" width="206" height="46" rx="7"/>
+    <rect class="hot" data-mod="ffn"         x="452" y="270" width="206" height="46" rx="7"/>
+    <rect class="hot" data-mod="head"        x="430" y="424" width="250" height="40" rx="8"/>
+    <rect class="hot" data-mod="vout"        x="730" y="250" width="130" height="60" rx="8"/>
+  </g>
 </svg>
+<p class="clickhint">💡 <b>点击图中任意模块</b>，下方展开对应源码（含 <code>patch_embedding ↔ Head+unpatchify</code> 的「沙漏」还原细节）。</p>
+<div class="codewrap" id="fig3-code"></div>
 <div class="cap">图 3 · DiT (WanModel) 数据流（输入端口已按 <code>WanAttentionBlock.forward</code> 精确匹配）：<b>带噪 latent x</b> 经 patch_embedding 成为 token，作 <b>Self-Attention</b> 的 Q/K/V；<b>文本 context</b> 经 text_embedding 后只作 <b>Cross-Attention</b> 的 K/V；<b>时间步 t</b> 经 MLP 生成 6 路调制，仅作用于 Self-Attn 与 FFN 的归一化（橙色虚线），<u>不进入 Cross-Attention</u>。最终 Head+unpatchify 还原成与输入同形的速度场。</div>
+
+<div class="tip"><b>AdaLN 调制（图中橙色虚线）到底在做什么？</b> 它是把「扩散时间步 t」这一条件信号注入每个 Block 的方式——让<u>同一套共享权重</u>在不同噪声水平下表现出不同的去噪行为。三个目的：
+<ul>
+<li><b>① 告诉模型「现在噪声有多大」。</b> 去噪 50 步里，t≈1000（近纯噪声）与 t≈0（近干净）需要完全不同的预测策略。t 经 <code>time_embedding → time_projection</code> 变成 6 路向量 <code>(shift, scale, gate)×2</code>，逐 Block 注入，让模型按当前步调整行为。</li>
+<li><b>② FiLM 式条件注入，比拼接更省。</b> 不把 t 拼到 token 上，而是用 t 去调制归一化后的激活：<code>norm(x)·(1+scale)+shift</code>。这是逐通道的仿射变换，参数少、算力省，却能在每层灵活地缩放/平移特征分布。</li>
+<li><b>③ gate 门控 + 末端归零保稳定。</b> 残差分支输出再乘一个 <code>gate</code>：<code>x = x + gate·y</code>，让每层能自适应地缩放自身贡献。注意：经典 DiT 的「AdaLN-Zero」是把各 Block 的 gate 投影置零（初始恒等）；<b>Wan2.2 并未这样做</b>——它的 <code>modulation</code>/<code>time_projection</code> 都是常规随机初始化（<code>model.py:217/386/532</code>），gate 初始并不为 0。Wan 改为<u>只把最终输出层 <code>head.head.weight</code> 置零</u>（<code>model.py:546</code>），同样让训练初期网络输出≈0、保持稳定，但机制是「末端归零」而非「逐 Block 恒等」。</li>
+</ul>
+对应代码：<code>e[0..2]=(shift,scale,gate)</code> 调制 <b>Self-Attn</b>，<code>e[3..5]</code> 调制 <b>FFN</b>；<b>Cross-Attention 不吃调制</b>——它的条件来自文本 K/V，无需时间步信号。</div>
 </div>
 
 <div class="card">
@@ -665,6 +734,55 @@ videos = self.vae.<span class="tok-fn">decode</span>(latents)        <span class
 <tr><td><b>Head</b></td><td>最后归一化 + 线性投影回 patch</td><td>[B, L, 48·prod(patch)]</td></tr>
 <tr><td><b>unpatchify</b></td><td>把 token 序列还原成 latent 立方体</td><td>→ [48, 31, 44, 80]</td></tr>
 </table>
+</div>
+
+<div class="note">
+<b>为什么输出 noise_pred 又和输入 latent x 同形？——DiT 是个「沙漏」。</b><br>
+<code>patch_embedding</code> 确实改变了形状（下采样 + 升维），但网络末端的 <code>Head + unpatchify</code> 是它的<b>精确逆操作</b>，一压一还原，形状回到原点。关键常被忽略的一点：<b>Head 的输出维度不是 48，而是 48×prod(patch_size)=48×(1·2·2)=192</b>——每个 token 吐出的是「它当初代表的那个 1×2×2 小块里、全部 48 通道的数值」，<code>unpatchify</code> 再把这 192 个数拆回小块、贴回空间位置。
+</div>
+
+<div class="fig">
+<svg viewBox="0 0 880 250" xmlns="http://www.w3.org/2000/svg" font-size="12">
+  <defs>
+    <marker id="hg1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#7ee787"/></marker>
+  </defs>
+  <!-- 去程 -->
+  <rect x="20" y="92" width="150" height="56" rx="8" fill="#1c2330" stroke="#ff7b9c"/>
+  <text x="95" y="114" fill="#ff7b9c" text-anchor="middle" font-weight="bold">latent x</text>
+  <text x="95" y="132" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">(48,31,44,80)</text>
+
+  <rect x="210" y="92" width="160" height="56" rx="8" fill="#16213a" stroke="#ff7b9c"/>
+  <text x="290" y="111" fill="#d7e0ea" text-anchor="middle" font-size="11">patch_embedding</text>
+  <text x="290" y="126" fill="#9aa7b5" text-anchor="middle" font-size="9.5">Conv3d k=s=(1,2,2)</text>
+  <text x="290" y="140" fill="#9aa7b5" text-anchor="middle" font-size="9.5">通道48→3072, 空间÷2</text>
+
+  <rect x="410" y="92" width="170" height="56" rx="8" fill="#161b22" stroke="#7ee787" stroke-width="2"/>
+  <text x="495" y="114" fill="#7ee787" text-anchor="middle" font-weight="bold">30×Block</text>
+  <text x="495" y="132" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">(1, 27280, 3072) 不变</text>
+
+  <rect x="620" y="92" width="170" height="56" rx="8" fill="#16213a" stroke="#7ee787"/>
+  <text x="705" y="108" fill="#d7e0ea" text-anchor="middle" font-size="11">Head + unpatchify</text>
+  <text x="705" y="123" fill="#9aa7b5" text-anchor="middle" font-size="9.5">Linear→192, 拆块贴回</text>
+  <text x="705" y="137" fill="#9aa7b5" text-anchor="middle" font-size="9.5">通道3072→48, 空间×2</text>
+
+  <rect x="700" y="180" width="160" height="50" rx="8" fill="#1c2330" stroke="#ff7b9c"/>
+  <text x="780" y="200" fill="#ff7b9c" text-anchor="middle" font-weight="bold">noise_pred v</text>
+  <text x="780" y="217" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">(48,31,44,80)</text>
+
+  <!-- arrows -->
+  <line x1="170" y1="120" x2="208" y2="120" stroke="#7ee787" marker-end="url(#hg1)"/>
+  <line x1="370" y1="120" x2="408" y2="120" stroke="#7ee787" marker-end="url(#hg1)"/>
+  <line x1="580" y1="120" x2="618" y2="120" stroke="#7ee787" marker-end="url(#hg1)"/>
+  <path d="M705,148 C705,170 740,176 760,178" fill="none" stroke="#7ee787" marker-end="url(#hg1)"/>
+
+  <!-- 逆操作括注 -->
+  <path d="M290,158 C290,182 705,182 705,160" fill="none" stroke="#4ea1ff" stroke-dasharray="4 3"/>
+  <text x="497" y="200" fill="#4ea1ff" text-anchor="middle" font-size="11">patch_embedding 与 Head+unpatchify 互为逆操作（下采样↔上采样、48↔192/3072）</text>
+
+  <text x="40" y="40" fill="#7ee787" font-weight="bold" font-size="13">DiT 的「沙漏」形状轨迹</text>
+  <text x="40" y="60" fill="#9aa7b5" font-size="10.5">中间 30 层 Transformer 形状恒定；两端的 patchify / unpatchify 把它压下去再原样抬回来</text>
+</svg>
+<div class="cap">图 3b · 为什么 noise_pred 与 latent x 同形：DiT 两端互逆，中段恒形。<b>Head 投到 192=48×(1·2·2) 而非 48</b> 是还原成立的关键——点上方图 3 的 <b>Head</b> 模块可看 <code>unpatchify</code> 的张量重排代码。</div>
 </div>
 
 <h3 id="dit-embed">3.1 三类 Embedding</h3>
@@ -687,7 +805,7 @@ x = [u.<span class="tok-fn">flatten</span>(<span class="tok-num">2</span>).trans
 <div class="tip"><b>「逐 token 时间步」是 TI2V 的关键设计。</b> 普通 DiT 一个样本一个标量 t；这里 <code>forward</code> 接收的 <code>t</code> 形状是 <code>[B, seq_len]</code>——每个 latent token 可以有不同的时间步。这让「首帧已知(t=0)、其余帧待生成(t=T)」能在同一次前向里混合处理，正是图生视频的底层机制。时间嵌入因此产生 <code>e0</code> 形状 <code>[B, L, 6, dim]</code>。</div>
 
 <h3 id="dit-block">3.2 AttentionBlock 与 AdaLN 调制</h3>
-<p>每个 Block 的结构是经典 <b>DiT + AdaLN-Zero</b>：时间步通过 <code>modulation</code> 产生 6 个调制向量，控制自注意力、FFN 前后的「缩放/平移/门控」。</p>
+<p>每个 Block 的结构是经典 <b>DiT + AdaLN（自适应层归一化）</b>：时间步通过 <code>modulation</code> 产生 6 个调制向量，控制自注意力、FFN 前后的「缩放/平移/门控」。<b>注意</b>：原始 DiT 论文的「AdaLN-Zero」会把各 Block 的 gate 投影零初始化使其起步为恒等映射；<b>Wan2.2 并未这样做</b>，它的 <code>modulation</code> 是常规随机初始化（<code>model.py:217</code>），仅把<u>最终输出层 <code>head.head</code> 置零</u>（<code>model.py:546</code>）来稳定训练初期——下文一律称其为 AdaLN 调制而非 AdaLN-Zero。</p>
 
 <div class="filehdr">model.py · WanAttentionBlock.forward（核心调制逻辑）</div>
 <pre><code><span class="tok-com"># e: [B,L,6,dim] 时间嵌入；modulation: 可学习的 [1,6,dim]</span>
@@ -704,84 +822,98 @@ x = x + y * e[<span class="tok-num">5</span>]                                   
 
 <div class="fig">
 <img src="images/Transformer-block-of-wan.png" alt="Transformer block of Wan" style="max-width:420px">
-<div class="cap">官方论文图 · Wan 的 Transformer Block：V-Tokens(视频) 依次过 LayerNorm→Self-Attention→Cross-Attention(注入 T-Tokens 文本)→FFN，Timestep 经 MLP 产生调制注入各层，整体重复 N 次。下面图 4 是本仓库代码里 AdaLN-Zero 6 路调制的实现级详图。</div>
+<div class="cap">官方论文图 · Wan 的 Transformer Block：V-Tokens(视频) 依次过 LayerNorm→Self-Attention→Cross-Attention(注入 T-Tokens 文本)→FFN，Timestep 经 MLP 产生调制注入各层，整体重复 N 次。下面图 4 是本仓库代码里 AdaLN 6 路调制的实现级详图。</div>
 </div>
 
 <div class="fig">
-<svg viewBox="0 0 720 440" xmlns="http://www.w3.org/2000/svg" font-size="12.5">
+<svg viewBox="0 0 730 450" xmlns="http://www.w3.org/2000/svg" font-size="12.5">
   <defs>
     <marker id="b1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#d7e0ea"/></marker>
     <marker id="b2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L6,3 L0,6 Z" fill="#ffb454"/></marker>
   </defs>
 
-  <!-- timestep modulation source -->
-  <rect x="500" y="20" width="200" height="64" rx="8" fill="#16213a" stroke="#ffb454"/>
-  <text x="600" y="42" fill="#ffb454" text-anchor="middle" font-weight="bold">时间嵌入 e0 + modulation</text>
-  <text x="600" y="60" fill="#9aa7b5" text-anchor="middle" font-size="10.5">chunk(6) → 6 个调制向量</text>
-  <text x="600" y="76" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">e[0..5] (float32)</text>
+  <!-- ===== 时间步调制源（两级：全局 e0 + 本层 modulation → chunk(6)）===== -->
+  <rect x="455" y="16" width="250" height="104" rx="8" fill="#16213a" stroke="#ffb454"/>
+  <text x="580" y="36" fill="#ffb454" text-anchor="middle" font-weight="bold">时间步 → 6 路调制源</text>
+  <text x="580" y="55" fill="#d7e0ea" text-anchor="middle" font-size="11" class="mono">e0 = time_projection(e)</text>
+  <text x="580" y="70" fill="#9aa7b5" text-anchor="middle" font-size="10">[B,L,6,dim] · 全局，30 个 Block 共享</text>
+  <line x1="467" y1="80" x2="693" y2="80" stroke="#2a3340" stroke-dasharray="3 3"/>
+  <text x="580" y="96" fill="#d7e0ea" text-anchor="middle" font-size="10.5">＋ modulation [1,6,dim]（每 Block 独有）</text>
+  <text x="580" y="112" fill="#7ee787" text-anchor="middle" font-size="10.5" class="mono">→ chunk(6) → e[0..5]（本层专属）</text>
 
   <!-- main column -->
-  <line x1="120" y1="30" x2="120" y2="410" stroke="#2a3340" stroke-width="2"/>
-  <rect x="55" y="20" width="130" height="34" rx="7" fill="#1c2330" stroke="#7ee787"/>
+  <line x1="120" y1="30" x2="120" y2="412" stroke="#2a3340" stroke-width="2"/>
+  <rect x="50" y="20" width="140" height="34" rx="7" fill="#1c2330" stroke="#7ee787"/>
   <text x="120" y="42" fill="#7ee787" text-anchor="middle">输入 x (L,3072)</text>
 
   <!-- self-attn branch -->
-  <rect x="40" y="80" width="160" height="32" rx="6" fill="#1c2330" stroke="#2a3340"/>
-  <text x="120" y="100" fill="#d7e0ea" text-anchor="middle" font-size="11.5">norm1 · (1+e1) + e0</text>
-  <rect x="40" y="122" width="160" height="34" rx="6" fill="#16213a" stroke="#ff7b9c"/>
-  <text x="120" y="143" fill="#ff7b9c" text-anchor="middle">Self-Attn + RoPE</text>
-  <circle cx="120" cy="180" r="13" fill="#1c2330" stroke="#7ee787"/>
-  <text x="120" y="185" fill="#7ee787" text-anchor="middle" font-size="14">+</text>
-  <text x="240" y="170" fill="#ffb454" font-size="10.5">× e2 (gate)</text>
+  <rect x="35" y="78" width="175" height="32" rx="6" fill="#1c2330" stroke="#2a3340"/>
+  <text x="122" y="98" fill="#d7e0ea" text-anchor="middle" font-size="11.5" class="mono">norm1·(1+e[1])+e[0]</text>
+  <rect x="35" y="120" width="175" height="34" rx="6" fill="#16213a" stroke="#ff7b9c"/>
+  <text x="122" y="141" fill="#ff7b9c" text-anchor="middle">Self-Attn + RoPE</text>
+  <circle cx="120" cy="178" r="13" fill="#1c2330" stroke="#7ee787"/>
+  <text x="120" y="183" fill="#7ee787" text-anchor="middle" font-size="14">+</text>
+  <text x="222" y="173" fill="#ffb454" font-size="10.5" class="mono">× e[2] (gate)</text>
 
-  <!-- cross-attn -->
-  <rect x="40" y="210" width="160" height="32" rx="6" fill="#1c2330" stroke="#2a3340"/>
-  <text x="120" y="230" fill="#d7e0ea" text-anchor="middle" font-size="11.5">norm3(x)</text>
-  <rect x="40" y="250" width="160" height="34" rx="6" fill="#16213a" stroke="#4ea1ff"/>
-  <text x="120" y="271" fill="#4ea1ff" text-anchor="middle">Cross-Attn (文本)</text>
-  <circle cx="120" cy="305" r="13" fill="#1c2330" stroke="#7ee787"/>
-  <text x="120" y="310" fill="#7ee787" text-anchor="middle" font-size="14">+</text>
+  <!-- cross-attn（无时间步调制）-->
+  <rect x="35" y="206" width="175" height="30" rx="6" fill="#1c2330" stroke="#2a3340"/>
+  <text x="122" y="226" fill="#d7e0ea" text-anchor="middle" font-size="11.5" class="mono">norm3(x)</text>
+  <rect x="35" y="246" width="175" height="34" rx="6" fill="#16213a" stroke="#4ea1ff"/>
+  <text x="122" y="267" fill="#4ea1ff" text-anchor="middle">Cross-Attn (文本)</text>
+  <circle cx="120" cy="302" r="13" fill="#1c2330" stroke="#7ee787"/>
+  <text x="120" y="307" fill="#7ee787" text-anchor="middle" font-size="14">+</text>
+  <text x="222" y="262" fill="#6b7785" font-size="10">（不吃调制）</text>
 
   <!-- ffn -->
-  <rect x="40" y="335" width="160" height="32" rx="6" fill="#1c2330" stroke="#2a3340"/>
-  <text x="120" y="355" fill="#d7e0ea" text-anchor="middle" font-size="11.5">norm2 · (1+e4) + e3</text>
-  <rect x="40" y="375" width="160" height="0" /> <!-- spacer -->
-  <rect x="240" y="335" width="150" height="34" rx="6" fill="#16213a" stroke="#ffb454"/>
-  <text x="315" y="356" fill="#ffb454" text-anchor="middle">FFN (GELU)</text>
+  <rect x="35" y="332" width="175" height="32" rx="6" fill="#1c2330" stroke="#2a3340"/>
+  <text x="122" y="352" fill="#d7e0ea" text-anchor="middle" font-size="11.5" class="mono">norm2·(1+e[4])+e[3]</text>
+  <rect x="250" y="331" width="140" height="34" rx="6" fill="#16213a" stroke="#ffb454"/>
+  <text x="320" y="352" fill="#ffb454" text-anchor="middle">FFN (GELU)</text>
   <circle cx="120" cy="405" r="13" fill="#1c2330" stroke="#7ee787"/>
   <text x="120" y="410" fill="#7ee787" text-anchor="middle" font-size="14">+</text>
-  <text x="240" y="398" fill="#ffb454" font-size="10.5">× e5 (gate)</text>
+  <text x="222" y="400" fill="#ffb454" font-size="10.5" class="mono">× e[5] (gate)</text>
 
   <!-- main flow arrows -->
-  <line x1="120" y1="54" x2="120" y2="78" stroke="#d7e0ea" marker-end="url(#b1)"/>
-  <line x1="120" y1="112" x2="120" y2="120" stroke="#d7e0ea" marker-end="url(#b1)"/>
-  <line x1="120" y1="156" x2="120" y2="166" stroke="#ff7b9c" marker-end="url(#b1)"/>
-  <line x1="120" y1="193" x2="120" y2="208" stroke="#7ee787" marker-end="url(#b1)"/>
-  <line x1="120" y1="242" x2="120" y2="248" stroke="#d7e0ea" marker-end="url(#b1)"/>
-  <line x1="120" y1="284" x2="120" y2="292" stroke="#4ea1ff" marker-end="url(#b1)"/>
-  <line x1="120" y1="318" x2="120" y2="333" stroke="#7ee787" marker-end="url(#b1)"/>
-  <path d="M200,351 L238,351" stroke="#d7e0ea" marker-end="url(#b1)"/>
-  <path d="M315,369 C315,392 180,405 135,405" fill="none" stroke="#ffb454" marker-end="url(#b1)"/>
+  <line x1="120" y1="54" x2="120" y2="76" stroke="#d7e0ea" marker-end="url(#b1)"/>
+  <line x1="120" y1="110" x2="120" y2="118" stroke="#d7e0ea" marker-end="url(#b1)"/>
+  <line x1="120" y1="154" x2="120" y2="164" stroke="#ff7b9c" marker-end="url(#b1)"/>
+  <line x1="120" y1="191" x2="120" y2="204" stroke="#7ee787" marker-end="url(#b1)"/>
+  <line x1="120" y1="236" x2="120" y2="244" stroke="#d7e0ea" marker-end="url(#b1)"/>
+  <line x1="120" y1="280" x2="120" y2="289" stroke="#4ea1ff" marker-end="url(#b1)"/>
+  <line x1="120" y1="315" x2="120" y2="330" stroke="#7ee787" marker-end="url(#b1)"/>
+  <path d="M210,348 L248,348" stroke="#d7e0ea" marker-end="url(#b1)"/>
+  <path d="M320,365 C320,390 175,405 135,405" fill="none" stroke="#ffb454" marker-end="url(#b1)"/>
   <!-- residual skip lines -->
-  <path d="M120,66 C30,66 30,180 107,180" fill="none" stroke="#7ee787" stroke-dasharray="3 3"/>
-  <path d="M120,196 C30,196 30,305 107,305" fill="none" stroke="#7ee787" stroke-dasharray="3 3"/>
-  <path d="M120,320 C30,320 30,405 107,405" fill="none" stroke="#7ee787" stroke-dasharray="3 3"/>
+  <path d="M120,66 C28,66 28,178 107,178" fill="none" stroke="#7ee787" stroke-dasharray="3 3"/>
+  <path d="M120,194 C28,194 28,302 107,302" fill="none" stroke="#7ee787" stroke-dasharray="3 3"/>
+  <path d="M120,318 C28,318 28,405 107,405" fill="none" stroke="#7ee787" stroke-dasharray="3 3"/>
 
-  <!-- modulation distribution arrows -->
-  <path d="M500,70 C320,80 250,95 200,98" fill="none" stroke="#ffb454" stroke-dasharray="4 3" marker-end="url(#b2)"/>
-  <path d="M560,84 C400,200 220,330 190,348" fill="none" stroke="#ffb454" stroke-dasharray="4 3" marker-end="url(#b2)"/>
-  <path d="M600,84 C600,180 150,168 134,178" fill="none" stroke="#ffb454" stroke-dasharray="4 3" marker-end="url(#b2)"/>
-  <path d="M620,84 C640,260 200,400 134,403" fill="none" stroke="#ffb454" stroke-dasharray="4 3" marker-end="url(#b2)"/>
+  <!-- modulation distribution arrows（两簇，不再交叉）-->
+  <path d="M455,70 C320,72 250,86 213,92" fill="none" stroke="#ffb454" stroke-dasharray="4 3" marker-end="url(#b2)"/>
+  <text x="300" y="70" fill="#ffb454" font-size="9.5" class="mono">e[0],e[1],e[2] → Self-Attn</text>
+  <path d="M470,120 C400,230 270,330 213,346" fill="none" stroke="#ffb454" stroke-dasharray="4 3" marker-end="url(#b2)"/>
+  <text x="312" y="246" fill="#ffb454" font-size="9.5" class="mono">e[3],e[4],e[5] → FFN</text>
 
   <!-- legend -->
-  <text x="455" y="150" fill="#9aa7b5" font-size="11">e0,e1 → shift/scale (自注意力前)</text>
-  <text x="455" y="168" fill="#9aa7b5" font-size="11">e2 → gate (自注意力残差)</text>
-  <text x="455" y="186" fill="#9aa7b5" font-size="11">e3,e4 → shift/scale (FFN 前)</text>
-  <text x="455" y="204" fill="#9aa7b5" font-size="11">e5 → gate (FFN 残差)</text>
-  <text x="455" y="228" fill="#7ee787" font-size="11">虚线绿 = 残差直连</text>
-  <text x="455" y="246" fill="#ffb454" font-size="11">虚线橙 = 时间步调制注入</text>
+  <text x="448" y="156" fill="#9aa7b5" font-size="11" class="mono">e[0],e[1] → shift/scale（Self-Attn 前 norm1）</text>
+  <text x="448" y="174" fill="#9aa7b5" font-size="11" class="mono">e[2] → gate（Self-Attn 残差）</text>
+  <text x="448" y="192" fill="#9aa7b5" font-size="11" class="mono">e[3],e[4] → shift/scale（FFN 前 norm2）</text>
+  <text x="448" y="210" fill="#9aa7b5" font-size="11" class="mono">e[5] → gate（FFN 残差）</text>
+  <text x="448" y="232" fill="#7ee787" font-size="11">虚线绿 = 残差直连</text>
+  <text x="448" y="250" fill="#ffb454" font-size="11">虚线橙 = 时间步调制注入</text>
+  <text x="448" y="276" fill="#ff7b9c" font-size="10.5">⚠ 图中 e[0..5] = chunk 后的「本层」调制，</text>
+  <text x="448" y="291" fill="#ff7b9c" font-size="10.5">    与上方「全局 e0」非同一张量。</text>
+
+  <!-- ===== 可点击热区（透明覆盖层）===== -->
+  <g id="fig4-hot">
+    <rect class="hot" data-mod="time-mod" x="455" y="16"  width="250" height="104" rx="8"/>
+    <rect class="hot" data-mod="sa-adaln" x="33"  y="76"  width="179" height="118" rx="6"/>
+    <rect class="hot" data-mod="ffn-adaln" x="33" y="330" width="179" height="92"  rx="6"/>
+  </g>
 </svg>
-<div class="cap">图 4 · WanAttentionBlock 的 AdaLN-Zero 调制：时间嵌入拆成 6 路（shift/scale/gate ×2），分别控制自注意力与 FFN 的归一化和残差门控；绿色虚线为残差直连</div>
+<p class="clickhint">💡 <b>点击「调制源 / Self-Attn AdaLN / FFN AdaLN」三块</b>，下方展开 <code>e0→chunk(6)→shift/scale/gate</code> 的实现级源码。</p>
+<div class="codewrap" id="fig4-code"></div>
+<div class="cap">图 4 · WanAttentionBlock 的 AdaLN 调制：全局 <code class="mono">e0</code> 进 Block 后 <code class="mono">+ modulation</code> 再 <code class="mono">chunk(6)</code>，得本层专属 <code class="mono">e[0..5]</code>（shift/scale/gate ×2），分别控制自注意力与 FFN 的归一化和残差门控；绿色虚线为残差直连，Cross-Attn 不吃调制</div>
 </div>
 
 <div class="note"><b>三种注意力各司其职：</b>
@@ -812,10 +944,35 @@ x_i = torch.<span class="tok-fn">view_as_real</span>(x_i * freqs_i).flatten(<spa
 x = self.<span class="tok-fn">unpatchify</span>(x, grid_sizes)   <span class="tok-com"># token 序列 → latent 立方体</span>
 
 <span class="tok-kw">def</span> <span class="tok-fn">unpatchify</span>(self, x, grid_sizes):
-    <span class="tok-kw">for</span> u, v <span class="tok-kw">in</span> zip(x, grid_sizes.tolist()):           <span class="tok-com"># v=(31,22,40)</span>
-        u = u[:math.prod(v)].view(*v, *self.patch_size, c)  <span class="tok-com"># (31,22,40,1,2,2,48)</span>
-        u = torch.<span class="tok-fn">einsum</span>(<span class="tok-str">'fhwpqrc->cfphqwr'</span>, u)        <span class="tok-com"># 重排回空间顺序</span>
-        u = u.reshape(c, *[i*j <span class="tok-kw">for</span> i,j <span class="tok-kw">in</span> zip(v, self.patch_size)])  <span class="tok-com"># (48,31,44,80)</span></code></pre>
+    <span class="tok-com"># ───── 入参维度与含义 ─────</span>
+    <span class="tok-com"># x:          List[Tensor]，每个元素形状 [L, 192]</span>
+    <span class="tok-com">#   L=27280   = patch 后的 token 数（带 padding；下面 u[:prod(v)] 会切掉 padding）</span>
+    <span class="tok-com">#   192       = out_dim * prod(patch_size) = 48 * (1*2*2)，即「一个 token 打包的整块数值」</span>
+    <span class="tok-com"># grid_sizes: Tensor [B, 3]，每行 = patchify 时 Conv3d 输出的网格尺寸 (F_p, H_p, W_p)</span>
+    <span class="tok-com">#   本例 (31, 22, 40)：31 帧 latent、高 44÷2=22 块、宽 80÷2=40 块（去程记下，专供还原）</span>
+    <span class="tok-com"># c = self.out_dim = 48（VAE z_dim，要还原出的通道数）</span>
+    c = self.out_dim
+    out = []
+    <span class="tok-kw">for</span> u, v <span class="tok-kw">in</span> zip(x, grid_sizes.tolist()):           <span class="tok-com"># u:[L,192]  v=(31,22,40)</span>
+        <span class="tok-com"># ① 切掉 padding，再把 192 这一维「拆开」成 patch 的内部结构</span>
+        <span class="tok-com">#    prod(v)=31*22*40=27280 → 取前 27280 个有效 token</span>
+        <span class="tok-com">#    view 把 [27280, 192] 重塑为 7 维 [F_p,H_p,W_p, p,q,r, c]</span>
+        u = u[:math.prod(v)].view(*v, *self.patch_size, c)  <span class="tok-com"># →(31,22,40, 1,2,2, 48)</span>
+        <span class="tok-com">#    f,h,w = 块坐标(31,22,40)；p,q,r = 块内偏移(1,2,2)；c=48 通道</span>
+
+        <span class="tok-com"># ② 用 einsum 把「块坐标」和「块内偏移」交错排列，恢复像素的空间相邻顺序</span>
+        <span class="tok-com">#    fhwpqrc → cfphqwr：通道c提到最前；高方向 h 与块内 q 相邻、宽 w 与 r 相邻</span>
+        u = torch.<span class="tok-fn">einsum</span>(<span class="tok-str">'fhwpqrc->cfphqwr'</span>, u)        <span class="tok-com"># →(48, 31,1, 22,2, 40,2)</span>
+
+        <span class="tok-com"># ③ 合并相邻维度：H_p×p=22*2=44，W_p×r=40*2=80，F_p×1=31</span>
+        <span class="tok-com">#    即把每个 2×2 小块「摊平」回它原来占的 2×2 像素位置 → 空间分辨率翻倍回去</span>
+        u = u.reshape(c, *[i*j <span class="tok-kw">for</span> i,j <span class="tok-kw">in</span> zip(v, self.patch_size)])  <span class="tok-com"># →(48,31,44,80)</span>
+        out.append(u)
+    <span class="tok-kw">return</span> out                                       <span class="tok-com"># List[Tensor]，每个 (48,31,44,80)</span></code></pre>
+
+<div class="tip"><b>一句话理解 unpatchify：</b>它是 <code>patch_embedding</code> 的精确逆操作。patchify 时每个 2×2 的空间小块被 Conv3d 压成 1 个 token（通道 48→3072）；unpatchify 时反过来——Head 先把每个 token 投回 <b>192 = 48×(1×2×2)</b> 个数（恰好是一个小块的全部像素值），再靠 <code>grid_sizes</code> 记下的网格尺寸 <code>view + einsum + reshape</code> 把这些数<b>拆开、交错、贴回</b>原来的空间位置，于是 22×40 的「块网格」展开回 44×80 的「像素网格」。</div>
+
+<div class="note"><b>为什么需要 grid_sizes？</b> token 序列 <code>[27280, 192]</code> 是「拉平」的一维序列，本身不带空间结构。要把它折回 <code>(F,H,W)</code> 立方体，就必须知道当初是按什么网格拉平的——这就是 <code>grid_sizes=(31,22,40)</code> 的作用。它在 <code>forward</code> 里 patchify 之后立刻被 <code>torch.stack([u.shape[2:] ...])</code> 记下来，一路透传到这里。<code>u, v</code> 只是 <code>zip</code> 的循环变量（按 batch 逐样本取「特征张量 u」和「它的网格尺寸 v」），与注意力的 q/k/v 无关。</div>
 <p>输出形状回到了 latent 的 <span class="shape">(48, 31, 44, 80)</span>，与输入噪声一致——这正是去噪循环里 <code>scheduler.step()</code> 所需要的「预测」。</p>
 
 <hr>
@@ -902,7 +1059,19 @@ x = self.<span class="tok-fn">unpatchify</span>(x, grid_sizes)   <span class="to
 
   <!-- scale note -->
   <text x="438" y="135" fill="#ff7b9c" text-anchor="middle" font-size="10">encode 后 (mu−mean)/std 归一化 · decode 前逆变换</text>
+
+  <!-- ===== 可点击热区（透明覆盖层）===== -->
+  <g id="fig5-hot">
+    <rect class="hot" data-mod="patchify" x="132" y="158" width="70"  height="44" rx="7"/>
+    <polygon class="hot" data-mod="encoder" points="218,120 360,150 360,210 218,240"/>
+    <rect class="hot" data-mod="latent"   x="378" y="150" width="120" height="60" rx="8"/>
+    <polygon class="hot" data-mod="decoder" points="516,150 658,120 658,240 516,210"/>
+    <rect class="hot" data-mod="unpatch"  x="676" y="158" width="74"  height="44" rx="7"/>
+    <rect class="hot" data-mod="chunk"    x="218" y="270" width="440" height="56" rx="8"/>
+  </g>
 </svg>
+<p class="clickhint">💡 <b>点击 patchify / Encoder / latent / Decoder / unpatchify / 因果分块说明框</b>，下方展开 <code>vae2_2.py</code> 真实源码。再次点击或按关闭按钮收起。</p>
+<div class="codewrap" id="fig5-code"></div>
 <div class="cap">图 5 · Wan2.2 VAE 对称结构：patchify(2×2) + Encoder(空间8×下采样) 把像素压成 48 维 latent；Decoder 对称还原。全程因果卷积 + 分块 + feat_cache，合计空间 16×16、时间 4× 压缩</div>
 </div>
 
@@ -959,6 +1128,382 @@ timesteps = sigmas * num_train_timesteps                     <span class="tok-co
 <div class="note"><b>shift 的作用：</b> <code>shift=5.0</code> 会把更多采样步数分配到高噪声阶段（视频生成的「大结构」在这里成形）。文档里提到「生成 480p 时建议 shift=3.0」——分辨率越低，shift 应越小。UniPC 是一个<b>多步预测-校正</b>求解器，比朴素 Euler 收敛更快，50 步即可出高质量结果。</div>
 
 <p><code>step()</code> 每步做的事：用 DiT 给出的 <code>noise_pred</code>（速度场）和当前 <code>sigma</code>，外加历史几步的缓存（多步法），解出下一个更干净的 latent。CFG 之后的 <code>noise_pred</code> 就是喂给它的输入。</p>
+
+<h3 id="unipc">5.1 UniPC 求解器逻辑（结合代码）</h3>
+<p>UniPC = <b>Uni</b>fied <b>P</b>redictor-<b>C</b>orrector，是一个<b>多步、预测-校正</b>的扩散 ODE 求解器。它的卖点是：用<b>历史几步</b>缓存下来的模型输出做高阶外推，所以 <b>50 步（甚至更少）</b>就能达到朴素一阶 Euler 上百步的质量。下面把 <code>fm_solvers_unipc.py</code> 拆成「三个阶段」来读。</p>
+
+<div class="card">
+<b>三个关键概念先对齐：</b>
+<table>
+<tr><th>名字</th><th>代码</th><th>含义</th></tr>
+<tr><td><b>sigma σ</b></td><td><code>self.sigmas</code></td><td>噪声水平，1=纯噪声 → 0=干净。Flow Matching 的「进度条」</td></tr>
+<tr><td><b>predict_x0</b></td><td><code>predict_x0=True</code></td><td>把模型输出的速度场先换算成「对干净图 x₀ 的预测」再积分，比直接积速度更稳</td></tr>
+<tr><td><b>solver_order</b></td><td><code>solver_order=2</code></td><td>用最近 2 步的输出做二阶外推（多步法）。开头不够 2 步时自动降阶</td></tr>
+<tr><td><b>P / C</b></td><td><code>uni_p / uni_c</code></td><td>Predictor 先迈一步；下一轮用新信息回头 Corrector 修正上一步，几乎零额外成本</td></tr>
+</table>
+</div>
+
+<div class="fig">
+<svg viewBox="0 0 760 596" xmlns="http://www.w3.org/2000/svg" font-size="12.5">
+  <defs>
+    <marker id="ua" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#7ee787"/></marker>
+    <marker id="ub" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#ff7b9c"/></marker>
+  </defs>
+
+  <!-- ① v 输入 -->
+  <rect x="70" y="22" width="320" height="48" rx="8" fill="#2a1a22" stroke="#ff7b9c"/>
+  <text x="230" y="44" fill="#ff7b9c" text-anchor="middle" font-weight="bold">① 输入：DiT 速度场 v</text>
+  <text x="230" y="61" fill="#9aa7b5" text-anchor="middle" font-size="10.5">= CFG 之后的 noise_pred（本步 latent x_t、时间步 t）</text>
+
+  <!-- ② convert -->
+  <rect x="70" y="96" width="320" height="54" rx="8" fill="#16213a" stroke="#4ea1ff"/>
+  <text x="230" y="118" fill="#4ea1ff" text-anchor="middle" font-weight="bold">② convert_model_output</text>
+  <text x="230" y="137" fill="#ffd9a0" text-anchor="middle" font-size="11" class="mono">x₀ = x_t − σ_t · v   （速度场 → 干净图预测）</text>
+
+  <!-- ③a corrector -->
+  <rect x="70" y="176" width="320" height="68" rx="8" fill="#13241a" stroke="#7ee787"/>
+  <text x="230" y="197" fill="#7ee787" text-anchor="middle" font-weight="bold">③ UniC 校正（仅 step_index&gt;0）</text>
+  <text x="230" y="215" fill="#9aa7b5" text-anchor="middle" font-size="10.5">multistep_uni_c_bh_update</text>
+  <text x="230" y="232" fill="#9aa7b5" text-anchor="middle" font-size="10.5">用本步新 x₀ 回头「修正上一步预测出的 sample」</text>
+
+  <!-- ④ cache -->
+  <rect x="70" y="270" width="320" height="48" rx="8" fill="#1c2330" stroke="#ffb454"/>
+  <text x="230" y="291" fill="#ffb454" text-anchor="middle" font-weight="bold">④ 推入滑动窗口</text>
+  <text x="230" y="308" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">model_outputs[-1] = x₀ （丢最老，留最近 order 个）</text>
+
+  <!-- ⑤ order -->
+  <rect x="70" y="344" width="320" height="56" rx="8" fill="#1c2330" stroke="#ff7b9c"/>
+  <text x="230" y="365" fill="#ff7b9c" text-anchor="middle" font-weight="bold">⑤ 定本步阶数 this_order</text>
+  <text x="230" y="383" fill="#9aa7b5" text-anchor="middle" font-size="10.5" class="mono">min(收尾降阶, 预热 lower_order_nums+1)</text>
+
+  <!-- ⑥ predict -->
+  <rect x="70" y="426" width="320" height="56" rx="8" fill="#16213a" stroke="#7ee787"/>
+  <text x="230" y="447" fill="#7ee787" text-anchor="middle" font-weight="bold">⑥ UniP 预测 multistep_uni_p_bh_update</text>
+  <text x="230" y="465" fill="#9aa7b5" text-anchor="middle" font-size="10.5">→ prev_sample（下一个更干净的 latent）</text>
+
+  <!-- ⑦ incr -->
+  <rect x="70" y="508" width="320" height="36" rx="8" fill="#1c2330" stroke="#4ea1ff"/>
+  <text x="230" y="531" fill="#4ea1ff" text-anchor="middle">⑦ step_index += 1 → 返回 prev_sample</text>
+
+  <!-- vertical arrows -->
+  <line x1="230" y1="70"  x2="230" y2="94"  stroke="#7ee787" marker-end="url(#ua)"/>
+  <line x1="230" y1="150" x2="230" y2="174" stroke="#7ee787" marker-end="url(#ua)"/>
+  <line x1="230" y1="244" x2="230" y2="268" stroke="#7ee787" marker-end="url(#ua)"/>
+  <line x1="230" y1="318" x2="230" y2="342" stroke="#7ee787" marker-end="url(#ua)"/>
+  <line x1="230" y1="400" x2="230" y2="424" stroke="#7ee787" marker-end="url(#ua)"/>
+  <line x1="230" y1="482" x2="230" y2="506" stroke="#7ee787" marker-end="url(#ua)"/>
+
+  <!-- loop back ×50 -->
+  <path d="M70,526 C40,526 40,46 68,46" fill="none" stroke="#7ee787" stroke-dasharray="4 3" marker-end="url(#ua)"/>
+  <text x="30" y="290" fill="#7ee787" font-size="11" text-anchor="middle" transform="rotate(-90 30 290)">去噪循环 ×50 步</text>
+
+  <!-- right notes -->
+  <rect x="430" y="176" width="312" height="68" rx="8" fill="#1c2330" stroke="#2a3340"/>
+  <text x="446" y="196" fill="#7ee787" font-size="11" font-weight="bold">首步特例</text>
+  <text x="446" y="214" fill="#9aa7b5" font-size="10.5">step_index=0 时 last_sample=None，</text>
+  <text x="446" y="230" fill="#9aa7b5" font-size="10.5">没有「上一步」可修正 → 跳过 ③，直接预测。</text>
+  <path d="M390,205 C408,205 414,205 428,205" fill="none" stroke="#2a3340" stroke-dasharray="3 3" marker-end="url(#ub)"/>
+
+  <rect x="430" y="344" width="312" height="56" rx="8" fill="#1c2330" stroke="#2a3340"/>
+  <text x="446" y="364" fill="#ff7b9c" font-size="11" font-weight="bold">为何降阶？</text>
+  <text x="446" y="382" fill="#9aa7b5" font-size="10.5">开头历史不足 2 步（预热）、结尾要平稳收敛，</text>
+  <text x="446" y="396" fill="#9aa7b5" font-size="10.5">都退回低阶，避免高阶外推发散。</text>
+  <path d="M390,372 C408,372 414,372 428,372" fill="none" stroke="#2a3340" stroke-dasharray="3 3" marker-end="url(#ub)"/>
+</svg>
+<div class="cap">图 A · <code>step()</code> 每步的 P-C 主控流程：<b>convert → （非首步）UniC 校正 → 入缓存 → 定阶数 → UniP 预测 → step_index+1</b>，整段无可学习参数，纯数值积分。对应 <code>fm_solvers_unipc.py</code> 的 <code>step()</code>（688-736 行）。</div>
+</div>
+
+<h4>① set_timesteps：排好 σ 时间表（含 shift）</h4>
+<div class="filehdr">fm_solvers_unipc.py · set_timesteps (184-213)</div>
+<pre><code><span class="tok-com"># σ 从 sigma_max(≈1) 均匀线性降到 sigma_min，切出 num_steps 个点</span>
+sigmas = np.<span class="tok-fn">linspace</span>(self.sigma_max, self.sigma_min, num_inference_steps + <span class="tok-num">1</span>)[:-<span class="tok-num">1</span>]
+
+<span class="tok-com"># ★ shift：把采样重心往「高噪声端」偏移（视频/高分辨率更友好）</span>
+<span class="tok-kw">if</span> shift <span class="tok-kw">is</span> <span class="tok-kw">None</span>: shift = self.config.shift
+sigmas = shift * sigmas / (<span class="tok-num">1</span> + (shift - <span class="tok-num">1</span>) * sigmas)        <span class="tok-com"># shift=5.0</span>
+
+timesteps = sigmas * self.config.num_train_timesteps          <span class="tok-com"># σ×1000 → 喂给 DiT 的 t</span>
+sigmas = np.<span class="tok-fn">concatenate</span>([sigmas, [sigma_last]])               <span class="tok-com"># 末尾补 σ=0（final_sigmas_type="zero"）</span>
+self.sigmas, self.timesteps = ...                             <span class="tok-com"># 存表，供每步查 σ_t / σ_s0</span>
+
+<span class="tok-com"># 多步法的「滑动窗口」缓存，初始为空</span>
+self.model_outputs   = [<span class="tok-kw">None</span>] * self.config.solver_order      <span class="tok-com"># 最近 order 步的模型输出</span>
+self.lower_order_nums = <span class="tok-num">0</span>                                     <span class="tok-com"># 已积累步数（<order 时降阶）</span></code></pre>
+<div class="note"><b>shift 直觉：</b><code>shift=5.0</code> 让更多步落在高噪声段（视频「大结构/运动」在这里成形）；<code>shift</code> 越小越偏细节，所以 <b>480p 建议 3.0</b>。这一步只排「时间表」，不碰 latent。</div>
+
+<div class="fig">
+<svg viewBox="0 0 760 330" xmlns="http://www.w3.org/2000/svg" font-size="12.5">
+  <defs>
+    <marker id="sa" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L6,3 L0,6 Z" fill="#9aa7b5"/></marker>
+  </defs>
+  <!-- left: curve -->
+  <text x="200" y="24" fill="#fff" text-anchor="middle" font-weight="bold">shift 把均匀的 σ 时间表「向上弯」</text>
+  <!-- axes -->
+  <line x1="60" y1="280" x2="350" y2="280" stroke="#9aa7b5" marker-end="url(#sa)"/>
+  <line x1="60" y1="280" x2="60" y2="50" stroke="#9aa7b5" marker-end="url(#sa)"/>
+  <text x="352" y="298" fill="#9aa7b5" font-size="10.5">线性步序 (i/N)</text>
+  <text x="36" y="48" fill="#9aa7b5" font-size="10.5">σ</text>
+  <text x="48" y="58" fill="#9aa7b5" font-size="9.5">1</text>
+  <text x="48" y="283" fill="#9aa7b5" font-size="9.5">0</text>
+  <!-- diagonal: shift=1 (no shift) -->
+  <line x1="60" y1="60" x2="320" y2="280" stroke="#6a7a8c" stroke-dasharray="5 4"/>
+  <text x="300" y="250" fill="#6a7a8c" font-size="10.5">shift=1（不偏移）</text>
+  <!-- shifted curve shift=5: sigma = 5s/(1+4s), s from 1..0 -->
+  <path d="M60,60 C90,92 120,150 175,196 C230,240 280,266 320,280" fill="none" stroke="#ffb454" stroke-width="2.5"/>
+  <text x="150" y="120" fill="#ffb454" font-size="11" font-weight="bold">shift=5.0</text>
+  <!-- highlight high-noise band -->
+  <rect x="60" y="50" width="290" height="70" fill="#ffb45422"/>
+  <text x="205" y="140" fill="#ffb454" font-size="10" text-anchor="middle">↑ 同样的步数，更多落在高 σ（高噪声）区</text>
+
+  <!-- right: step dots -->
+  <text x="560" y="24" fill="#fff" text-anchor="middle" font-weight="bold">50 步在 σ 轴上的疏密</text>
+  <text x="560" y="44" fill="#9aa7b5" text-anchor="middle" font-size="10">（每个点是一步的 σ；左=高噪声，右=干净）</text>
+  <!-- track 1: uniform -->
+  <text x="430" y="92" fill="#6a7a8c" font-size="11">均匀</text>
+  <line x1="470" y1="100" x2="730" y2="100" stroke="#2a3340"/>
+  <g fill="#6a7a8c"><circle cx="470" cy="100" r="3"/><circle cx="496" cy="100" r="3"/><circle cx="522" cy="100" r="3"/><circle cx="548" cy="100" r="3"/><circle cx="574" cy="100" r="3"/><circle cx="600" cy="100" r="3"/><circle cx="626" cy="100" r="3"/><circle cx="652" cy="100" r="3"/><circle cx="678" cy="100" r="3"/><circle cx="704" cy="100" r="3"/><circle cx="730" cy="100" r="3"/></g>
+  <!-- track 2: shift=5, denser at high sigma (left) -->
+  <text x="412" y="160" fill="#ffb454" font-size="11">shift=5</text>
+  <line x1="470" y1="168" x2="730" y2="168" stroke="#2a3340"/>
+  <g fill="#ffb454"><circle cx="470" cy="168" r="3"/><circle cx="486" cy="168" r="3"/><circle cx="504" cy="168" r="3"/><circle cx="524" cy="168" r="3"/><circle cx="548" cy="168" r="3"/><circle cx="576" cy="168" r="3"/><circle cx="608" cy="168" r="3"/><circle cx="644" cy="168" r="3"/><circle cx="682" cy="168" r="3"/><circle cx="730" cy="168" r="3"/></g>
+  <text x="470" y="192" fill="#ff7b9c" font-size="9.5">高噪声端更密 →更多算力给「大结构」</text>
+
+  <rect x="412" y="218" width="330" height="86" rx="8" fill="#1c2330" stroke="#2a3340"/>
+  <text x="428" y="240" fill="#4ea1ff" font-size="11" font-weight="bold" class="mono">σ = shift·s / (1 + (shift−1)·s)</text>
+  <text x="428" y="261" fill="#9aa7b5" font-size="10.5">s = 线性 linspace(1→0)；shift&gt;1 时整条曲线抬高，</text>
+  <text x="428" y="277" fill="#9aa7b5" font-size="10.5">同一步序号对应更大的 σ → 重心移向高噪声。</text>
+  <text x="428" y="296" fill="#9aa7b5" font-size="10.5">代码：set_timesteps 194-195 行。</text>
+</svg>
+<div class="cap">图 B · <code>shift</code> 重分配采样步：把均匀切分的 σ 序列整体抬向高噪声端。视频/高分辨率用 <code>shift=5.0</code>，低分辨率（480p）用 <code>3.0</code>。</div>
+</div>
+
+<h4>② convert_model_output：速度场 → 干净图预测 x₀</h4>
+<div class="filehdr">fm_solvers_unipc.py · convert_model_output (317-333)</div>
+<pre><code>sigma = self.sigmas[self.step_index]                          <span class="tok-com"># 当前噪声水平 σ_t</span>
+
+<span class="tok-kw">if</span> self.predict_x0:                                          <span class="tok-com"># Wan 默认 True</span>
+    <span class="tok-kw">if</span> self.config.prediction_type == <span class="tok-str">"flow_prediction"</span>:
+        sigma_t = self.sigmas[self.step_index]
+        <span class="tok-com"># ★ Flow Matching 的核心换算：x₀ = x_t − σ_t · v</span>
+        <span class="tok-com">#   model_output 是 DiT 预测的速度场 v；x 是当前带噪 latent</span>
+        x0_pred = sample - sigma_t * model_output
+    <span class="tok-kw">return</span> x0_pred                                          <span class="tok-com"># 后续积分都基于这个 x₀ 预测</span></code></pre>
+<div class="tip"><b>为什么先转 x₀？</b> 直接对速度场积分，误差会随步长累积；先把每步换算成「现在猜测的最终干净图 x₀」，再在 x₀ 空间做高阶组合，数值上更稳、对大步长更鲁棒——这正是 UniPC 能用少步数的前提之一。公式 <code>x₀ = x_t − σ_t·v</code> 是 Flow Matching 线性插值 <code>x_t = (1−σ)·x₀ + σ·noise</code> 的直接反解。</div>
+
+<div class="fig">
+<svg viewBox="0 0 760 290" xmlns="http://www.w3.org/2000/svg" font-size="12.5">
+  <defs>
+    <marker id="va" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#ff7b9c"/></marker>
+    <marker id="vb" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#7ee787"/></marker>
+  </defs>
+  <!-- the FM line from noise to clean -->
+  <text x="380" y="26" fill="#fff" text-anchor="middle" font-weight="bold">Flow Matching 直线：x_t = (1−σ)·x₀ + σ·noise</text>
+
+  <!-- endpoints -->
+  <circle cx="120" cy="150" r="7" fill="#ff7b9c"/>
+  <text x="120" y="180" fill="#ff7b9c" text-anchor="middle" font-size="11">noise (σ=1)</text>
+  <circle cx="640" cy="150" r="7" fill="#7ee787"/>
+  <text x="640" y="180" fill="#7ee787" text-anchor="middle" font-size="11">x₀ 干净图 (σ=0)</text>
+  <!-- the segment -->
+  <line x1="120" y1="150" x2="640" y2="150" stroke="#2a3340" stroke-width="2"/>
+
+  <!-- current x_t somewhere on the line -->
+  <circle cx="300" cy="150" r="6" fill="#4ea1ff"/>
+  <text x="300" y="134" fill="#4ea1ff" text-anchor="middle" font-size="11">当前 x_t（σ_t）</text>
+
+  <!-- velocity v points back toward noise direction; x0 = x_t - sigma_t * v -->
+  <!-- arrow showing -sigma_t * v moving x_t to x0 -->
+  <path d="M300,150 L632,150" fill="none" stroke="#7ee787" stroke-width="2" marker-end="url(#vb)"/>
+  <text x="466" y="142" fill="#7ee787" text-anchor="middle" font-size="11">− σ_t · v　（沿直线走到终点）</text>
+
+  <!-- v arrow (model output) drawn above -->
+  <path d="M300,108 L150,108" fill="none" stroke="#ff7b9c" stroke-width="2" marker-end="url(#va)"/>
+  <text x="225" y="100" fill="#ff7b9c" text-anchor="middle" font-size="11">DiT 输出速度场 v（指向 noise）</text>
+  <line x1="300" y1="150" x2="300" y2="108" stroke="#6a7a8c" stroke-dasharray="3 3"/>
+
+  <!-- box -->
+  <rect x="90" y="206" width="580" height="64" rx="8" fill="#1c2330" stroke="#2a3340"/>
+  <text x="110" y="228" fill="#4ea1ff" font-size="12" font-weight="bold" class="mono">x0_pred = sample − sigma_t · model_output</text>
+  <text x="110" y="248" fill="#9aa7b5" font-size="10.5">速度场 v 是一条「方向已知」的直线斜率；知道当前点 x_t 和它到终点的距离 σ_t，</text>
+  <text x="110" y="264" fill="#9aa7b5" font-size="10.5">就能一步外推到 σ=0 的终点 x₀。这就是 convert_model_output（317-333 行）做的事。</text>
+</svg>
+<div class="cap">图 C · <code>x₀ = x_t − σ_t·v</code> 的几何直觉：在 Flow Matching 的「噪声↔干净」直线上，用当前点与速度场反解出终点 x₀。后续所有高阶组合都在这个 x₀ 空间里做（<code>predict_x0=True</code>）。</div>
+</div>
+
+<h4>③ step：每步的 P-C 主控流程</h4>
+<div class="filehdr">fm_solvers_unipc.py · step (688-736，去噪循环每步调用一次)</div>
+<pre><code><span class="tok-kw">if</span> self.step_index <span class="tok-kw">is</span> <span class="tok-kw">None</span>: self.<span class="tok-fn">_init_step_index</span>(timestep)
+
+<span class="tok-com"># —— Corrector：从第 2 步起，用「这一步的新输出」回头修正「上一步的结果」——</span>
+use_corrector = (self.step_index > <span class="tok-num">0</span> <span class="tok-kw">and</span> self.last_sample <span class="tok-kw">is</span> <span class="tok-kw">not</span> <span class="tok-kw">None</span> <span class="tok-kw">and</span> ...)
+model_output_convert = self.<span class="tok-fn">convert_model_output</span>(model_output, sample=sample)   <span class="tok-com"># ②</span>
+<span class="tok-kw">if</span> use_corrector:
+    sample = self.<span class="tok-fn">multistep_uni_c_bh_update</span>(                <span class="tok-com"># UniC：校正，提升上一步精度</span>
+        this_model_output=model_output_convert,
+        last_sample=self.last_sample, this_sample=sample, order=self.this_order)
+
+<span class="tok-com"># —— 滑动窗口：把最近的输出/时间步推入缓存（丢掉最老的）——</span>
+<span class="tok-kw">for</span> i <span class="tok-kw">in</span> range(self.config.solver_order - <span class="tok-num">1</span>):
+    self.model_outputs[i] = self.model_outputs[i + <span class="tok-num">1</span>]
+self.model_outputs[-<span class="tok-num">1</span>] = model_output_convert
+
+<span class="tok-com"># —— 自动降阶：结尾几步 & 开头预热阶段都用低阶，保证稳定 ——</span>
+<span class="tok-kw">if</span> self.config.lower_order_final:
+    this_order = min(self.config.solver_order, len(self.timesteps) - self.step_index)
+self.this_order = min(this_order, self.lower_order_nums + <span class="tok-num">1</span>)    <span class="tok-com"># 预热：第1步只能1阶</span>
+
+<span class="tok-com"># —— Predictor：用缓存的多步输出做高阶外推，迈到下一个 σ ——</span>
+self.last_sample = sample
+prev_sample = self.<span class="tok-fn">multistep_uni_p_bh_update</span>(              <span class="tok-com"># UniP：预测下一个更干净的 latent</span>
+    model_output=model_output, sample=sample, order=self.this_order)
+
+self._step_index += <span class="tok-num">1</span>
+<span class="tok-kw">return</span> (prev_sample,)                                       <span class="tok-com"># return_dict=False → 取 [0]</span></code></pre>
+
+<div class="card">
+<b>UniP 内部（multistep_uni_p_bh_update）在算什么？</b> 一句话：<b>一阶主项 + 高阶残差修正</b>。
+<div class="filehdr">fm_solvers_unipc.py · multistep_uni_p_bh_update (468-475，predict_x0 分支)</div>
+<pre><code><span class="tok-com"># 一阶主项：相邻两个 σ 之间的基础积分步（等价于 DDIM/Euler 那一步）</span>
+x_t_ = sigma_t / sigma_s0 * x - alpha_t * h_phi_1 * m0
+
+<span class="tok-com"># 高阶残差：用历史步的差分 D1s 解出权重 rhos_p，做 e^h 展开的修正项</span>
+pred_res = torch.<span class="tok-fn">einsum</span>(<span class="tok-str">"k,bkc...->bc..."</span>, rhos_p, D1s)
+x_t = x_t_ - alpha_t * B_h * pred_res                         <span class="tok-com"># = 主项 − 修正</span></code></pre>
+<p class="muted">其中 <code>h = λ_t − λ_s0</code> 是对数信噪比的步长，<code>B_h</code>（<code>bh1/bh2</code>）与 <code>h_phi_*</code> 来自 <code>e^h−1</code> 的级数展开——本质是把指数积分器的高阶项用历史输出近似出来。<b>读代码时不必死磕这些系数公式</b>，记住结构是「基础步 + 历史信息修正」即可。</p>
+</div>
+
+<div class="fig">
+<svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" font-size="12.5">
+  <defs>
+    <marker id="pa" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#7ee787"/></marker>
+    <marker id="pb" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#ffb454"/></marker>
+  </defs>
+  <text x="380" y="24" fill="#fff" text-anchor="middle" font-weight="bold">P 与 C 在相邻步之间交错（多步法 + 预测-校正）</text>
+
+  <!-- step lane labels -->
+  <text x="120" y="70" fill="#9aa7b5" text-anchor="middle" font-size="11">step 0</text>
+  <text x="320" y="70" fill="#9aa7b5" text-anchor="middle" font-size="11">step 1</text>
+  <text x="520" y="70" fill="#9aa7b5" text-anchor="middle" font-size="11">step 2</text>
+  <text x="690" y="70" fill="#9aa7b5" text-anchor="middle" font-size="11">…</text>
+
+  <!-- timeline -->
+  <line x1="60" y1="90" x2="720" y2="90" stroke="#2a3340"/>
+  <circle cx="120" cy="90" r="5" fill="#4ea1ff"/><circle cx="320" cy="90" r="5" fill="#4ea1ff"/><circle cx="520" cy="90" r="5" fill="#4ea1ff"/><circle cx="690" cy="90" r="5" fill="#4ea1ff"/>
+
+  <!-- predictor boxes (per step) -->
+  <rect x="70" y="110" width="100" height="40" rx="6" fill="#16213a" stroke="#7ee787"/>
+  <text x="120" y="130" fill="#7ee787" text-anchor="middle" font-size="10.5" font-weight="bold">UniP 预测</text>
+  <text x="120" y="144" fill="#9aa7b5" text-anchor="middle" font-size="9">1 阶（预热）</text>
+
+  <rect x="270" y="110" width="100" height="40" rx="6" fill="#16213a" stroke="#7ee787"/>
+  <text x="320" y="130" fill="#7ee787" text-anchor="middle" font-size="10.5" font-weight="bold">UniP 预测</text>
+  <text x="320" y="144" fill="#9aa7b5" text-anchor="middle" font-size="9">2 阶</text>
+
+  <rect x="470" y="110" width="100" height="40" rx="6" fill="#16213a" stroke="#7ee787"/>
+  <text x="520" y="130" fill="#7ee787" text-anchor="middle" font-size="10.5" font-weight="bold">UniP 预测</text>
+  <text x="520" y="144" fill="#9aa7b5" text-anchor="middle" font-size="9">2 阶</text>
+
+  <!-- corrector boxes (start at step 1) -->
+  <rect x="270" y="200" width="100" height="40" rx="6" fill="#13241a" stroke="#ffb454"/>
+  <text x="320" y="220" fill="#ffb454" text-anchor="middle" font-size="10.5" font-weight="bold">UniC 校正</text>
+  <text x="320" y="234" fill="#9aa7b5" text-anchor="middle" font-size="9">修 step 0 的输出</text>
+
+  <rect x="470" y="200" width="100" height="40" rx="6" fill="#13241a" stroke="#ffb454"/>
+  <text x="520" y="220" fill="#ffb454" text-anchor="middle" font-size="10.5" font-weight="bold">UniC 校正</text>
+  <text x="520" y="234" fill="#9aa7b5" text-anchor="middle" font-size="9">修 step 1 的输出</text>
+
+  <!-- predictor flow arrows P0->P1->P2 -->
+  <path d="M170,130 L268,130" fill="none" stroke="#7ee787" stroke-width="1.5" marker-end="url(#pa)"/>
+  <path d="M370,130 L468,130" fill="none" stroke="#7ee787" stroke-width="1.5" marker-end="url(#pa)"/>
+  <path d="M570,130 L660,130" fill="none" stroke="#7ee787" stroke-width="1.5" marker-end="url(#pa)"/>
+
+  <!-- corrector looks back: new x0 at step1 corrects step0 -->
+  <path d="M300,200 C290,175 200,168 150,150" fill="none" stroke="#ffb454" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#pb)"/>
+  <path d="M500,200 C490,175 400,168 350,150" fill="none" stroke="#ffb454" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#pb)"/>
+  <text x="120" y="180" fill="#ffb454" font-size="9" text-anchor="middle">↖ 回头修正</text>
+
+  <!-- sliding window cache -->
+  <rect x="60" y="272" width="660" height="74" rx="8" fill="#1c2330" stroke="#2a3340"/>
+  <text x="76" y="293" fill="#4ea1ff" font-size="11" font-weight="bold">滑动窗口 model_outputs（solver_order=2）</text>
+  <rect x="76" y="304" width="150" height="30" rx="5" fill="#0b0f14" stroke="#2a3340"/>
+  <text x="151" y="324" fill="#9aa7b5" text-anchor="middle" font-size="10" class="mono">[x₀(t−1), x₀(t)]</text>
+  <text x="244" y="324" fill="#6a7a8c" font-size="10">每步：左移丢最老 → 末位写入本步 x₀；UniP/UniC 都从这两格取「历史差分 D1s」做高阶项。</text>
+
+  <!-- legend -->
+  <text x="600" y="293" fill="#7ee787" font-size="10">■ Predictor 主链</text>
+  <text x="600" y="262" fill="#ffb454" font-size="10">┄ Corrector 回看</text>
+</svg>
+<div class="cap">图 D · 多步法的「滑动窗口 + P-C 交错」：每步 UniP 用最近 <code>order</code> 个历史 x₀ 高阶外推下一步；从 step 1 起，UniC 用刚算出的新 x₀ 回头修正上一步的结果——几乎零额外模型调用（不需再跑 DiT）。开头不足 2 步时自动降为 1 阶（预热），结尾同理（<code>lower_order_final</code>）。</div>
+</div>
+
+<h4>③′ 「阶数 order」到底指什么？（理论补充）</h4>
+<p>前面反复出现「1 阶 / 2 阶 / 降阶」，这里的<b>阶数（order）</b>是<b>数值积分</b>的概念，<u>不是</u>神经网络的层数，也<u>不是</u>张量的维度。它衡量的是：<b>这一步用了「过去几个点」的信息来近似 ODE 的解曲线</b>——用得越多，对曲线弯曲的拟合越准，单步误差越小。</p>
+
+<div class="card">
+<b>一句话类比（开车估计下一秒的位置）：</b>
+<table>
+<tr><th>阶数</th><th>用到的信息</th><th>开车类比</th><th>单步局部误差</th></tr>
+<tr><td><b>1 阶</b><br><span class="muted">Euler / DDIM</span></td><td>只用<b>当前点</b>的斜率 m0</td><td>只看「当前速度」，假设这一秒匀速直线</td><td><span class="shape">O(h²)</span> 大</td></tr>
+<tr><td><b>2 阶</b><br><span class="muted">UniPC 默认</span></td><td>当前 + <b>上一步</b>，估出斜率的<b>变化</b>(D1s)</td><td>同时看「速度 + 加速度」，知道在拐弯</td><td><span class="shape">O(h³)</span> 小</td></tr>
+<tr><td><b>k 阶</b></td><td>最近 <b>k</b> 个历史输出</td><td>看到更高次的「加加速度…」</td><td><span class="shape">O(h^{k+1})</span></td></tr>
+</table>
+<span class="muted">其中 <code>h = λ_t − λ_s0</code> 是这一步的步长（对数信噪比空间）。步数越少 → 每步 <code>h</code> 越大 → 高阶项的优势越关键，这正是 UniPC「50 步抵 Euler 上百步」的根本原因。</span>
+</div>
+
+<div class="fig">
+<svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" font-size="12.5">
+  <defs>
+    <marker id="oa" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#ff7b9c"/></marker>
+    <marker id="ob" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#7ee787"/></marker>
+  </defs>
+  <text x="380" y="24" fill="#fff" text-anchor="middle" font-weight="bold">同样跨一大步，阶数越高越贴合真实解曲线</text>
+
+  <!-- true curved solution path -->
+  <path d="M120,250 C220,250 300,150 360,110 C440,58 560,52 660,70" fill="none" stroke="#4ea1ff" stroke-width="2.5"/>
+  <text x="610" y="58" fill="#4ea1ff" font-size="11">真实解曲线 x(σ)</text>
+
+  <!-- previous point + current point -->
+  <circle cx="120" cy="250" r="5" fill="#9aa7b5"/>
+  <text x="120" y="272" fill="#9aa7b5" text-anchor="middle" font-size="10">上一步 x(t−1)</text>
+  <circle cx="200" cy="218" r="6" fill="#fff"/>
+  <text x="200" y="206" fill="#fff" text-anchor="middle" font-size="10.5">当前 x_t</text>
+  <!-- target -->
+  <circle cx="360" cy="110" r="6" fill="#4ea1ff"/>
+  <text x="360" y="98" fill="#4ea1ff" text-anchor="middle" font-size="10.5">目标（下一步真值）</text>
+
+  <!-- 1st order: straight tangent (using only current slope) overshoots/misses -->
+  <line x1="200" y1="218" x2="372" y2="170" stroke="#ff7b9c" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#oa)"/>
+  <circle cx="372" cy="170" r="5" fill="#ff7b9c"/>
+  <text x="430" y="178" fill="#ff7b9c" font-size="10.5">1 阶落点（直线外推 → 偏离）</text>
+  <!-- error gap -->
+  <line x1="372" y1="170" x2="360" y2="110" stroke="#ff7b9c" stroke-dasharray="2 2"/>
+  <text x="395" y="142" fill="#ff7b9c" font-size="9.5">误差</text>
+
+  <!-- 2nd order: curved using prev info, lands near target -->
+  <path d="M200,218 C250,196 320,140 358,114" fill="none" stroke="#7ee787" stroke-width="2" marker-end="url(#ob)"/>
+  <text x="250" y="150" fill="#7ee787" font-size="10.5">2 阶：借上一步算出「弯曲」→ 落点几乎重合</text>
+
+  <!-- bottom note -->
+  <rect x="60" y="286" width="660" height="28" rx="6" fill="#1c2330" stroke="#2a3340"/>
+  <text x="380" y="304" fill="#9aa7b5" text-anchor="middle" font-size="10.5">1 阶只知道「当前往哪走」；2 阶还知道「方向正在怎么拐」，所以大步长下也不容易冲出曲线。</text>
+</svg>
+<div class="cap">图 E · 阶数的几何含义：1 阶用单点切线直线外推（粉，大步长会偏离弯曲的真实解）；2 阶借「上一步」估出曲率，沿弧线逼近（绿）。代码里 D1s=(mi−m0)/rk 就是在算这个「斜率的变化量」。</div>
+</div>
+
+<div class="note"><b>那「定阶数」这行代码在做什么？</b> <code>this_order = min(收尾降阶, lower_order_nums + 1)</code> 取两个上限的较小值：<br>
+① <b>预热下限</b> <code>lower_order_nums + 1</code>：第 1 步手里只有 1 个历史输出，<b>没有「上一步」可比</b>，只能做 1 阶；攒到第 2 步才够 2 阶。<br>
+② <b>收尾下限</b> <code>min(solver_order, 剩余步数)</code>（<code>lower_order_final=True</code>）：临近 σ→0 时主动降阶，让最后几步平稳收敛、不被高阶外推「甩飞」。<br>
+中间的绝大多数步则跑满 <code>solver_order=2</code>。所以一次 50 步采样的阶数序列大致是 <code class="mono">1 → 2 → 2 → … → 2 → 1</code>。</div>
+
+<details>
+<summary>展开：为什么不一味用更高阶（比如 4 阶）？</summary>
+<p class="muted">高阶只降低<b>局部截断误差</b>，但需要更多历史步「预热」、对数值噪声更敏感，且多步法在大步长下高阶项可能<b>不稳定（震荡放大）</b>。扩散采样里步长 <code>h</code> 本就不小，2 阶（UniPC 默认 <code>solver_order=2</code>）已是<b>精度/稳定性/缓存成本</b>的甜点；UniC 的「免费校正」又额外补了一档精度，所以实践中 2 阶 UniPC 就足够在 50 步出高质量结果。这也是它比同阶纯 Predictor 的 DPM++ 更稳的原因。</p>
+</details>
+
+<div class="note"><b>和 DPM++ 的关系：</b> 同文件夹的 <code>fm_solvers.py</code> 是 <code>FlowDPMSolverMultistepScheduler</code>（<code>sample_solver='dpm++'</code> 时启用），同样是多步指数积分器，但<b>只有 Predictor、没有 Corrector</b>。UniPC 多了一步几乎免费的校正，通常同步数下质量更好，所以是 TI2V 的默认 <code>'unipc'</code>。</div>
+
+<div class="warn"><b>一图记住 UniPC 每步：</b> <code>DiT 输出 v</code> → <b>convert</b> 成 x₀ 预测 → （非首步）<b>UniC 校正</b>上一步 → 推入<b>历史缓存</b> → 决定<b>本步阶数</b>（预热/收尾降阶）→ <b>UniP 高阶预测</b>下一个 latent → <code>step_index+1</code>。整段不含任何可学习参数，纯数值积分。</div>
+
 
 <hr>
 
@@ -1020,7 +1565,7 @@ noise_pred = noise_pred_uncond + guide_scale * (noise_pred_cond - noise_pred_unc
 <div class="cap">图 6 · CFG（Classifier-Free Guidance）机制：每个去噪步把 DiT 前向跑两次（条件 / 无条件），再沿两者之差外推 s 倍。这是「prompt 贴合度」的来源，也是推理耗时翻倍的原因</div>
 </div>
 
-<h4>数学形式与直觉</h4>
+<h4>数学形式与直觉（详细理论可参考https://zhuanlan.zhihu.com/p/2010512517017904543）</h4>
 <div class="card">
 设模型在时间步 t、给定条件 c 时的预测为 <code>v_θ(x_t, t, c)</code>，则 CFG 的引导预测为：
 <pre style="margin-top:10px"><code>v_guided = v_θ(x_t, t, ∅)  +  s · [ v_θ(x_t, t, c) − v_θ(x_t, t, ∅) ]
@@ -1275,7 +1820,7 @@ torchrun --nproc_per_node=<span class="tok-num">8</span> generate.py --task t2v-
 <tr><td><b>DiT</b></td><td>Diffusion Transformer，用 Transformer 替代 U-Net 做扩散去噪主干。Wan 的 WanModel 即 DiT。</td></tr>
 <tr><td><b>Flow Matching</b></td><td>一类生成式框架，学习从噪声到数据的速度场，sigma 从 1→0。比 DDPM 采样更高效。</td></tr>
 <tr><td><b>CFG</b></td><td>Classifier-Free Guidance，用「条件 vs 无条件」预测之差放大 prompt 影响。每步两次前向。</td></tr>
-<tr><td><b>AdaLN-Zero</b></td><td>时间步通过调制向量（shift/scale/gate）控制每个 Block 的归一化，是 DiT 注入条件的标准方式。</td></tr>
+<tr><td><b>AdaLN</b></td><td>时间步通过调制向量（shift/scale/gate）控制每个 Block 的归一化，是 DiT 注入条件的标准方式。原始 DiT 的「AdaLN-Zero」额外把各 Block gate 零初始化（起步恒等）；Wan2.2 不这么做，改为只把输出层 <code>head.head</code> 置零来稳定训练。</td></tr>
 <tr><td><b>RoPE (3D)</b></td><td>旋转位置编码，这里按帧/高/宽三轴分别编码，给注意力提供三维位置感。</td></tr>
 <tr><td><b>MoE 双专家</b></td><td>A14B 任务有 high-noise / low-noise 两个 DiT，按时间步 boundary 切换（TI2V-5B 不用，是稠密单模型）。</td></tr>
 <tr><td><b>FSDP / Ulysses</b></td><td>分别切「模型参数」/「序列长度」的两种多卡并行，可叠加使用。</td></tr>
@@ -1283,5 +1828,764 @@ torchrun --nproc_per_node=<span class="tok-num">8</span> generate.py --task t2v-
 
 </main>
 </div>
+<script>
+/* ===== 图 2 模块 → 源码映射（取自真实仓库，标注文件与行号）===== */
+const FIG2_CODE = {
+  "text-enc": {
+    name: "① 文本编码 UMT5-XXL",
+    file: "wan/modules/t5.py · T5EncoderModel.__call__ (506-513) ＋ textimage2video.py · t2v (299-309)",
+    code:
+`# —— T5EncoderModel.__call__：自然语言 → [L, 4096] 语义向量 ——
+def __call__(self, texts, device):
+    ids, mask = self.tokenizer(
+        texts, return_mask=True, add_special_tokens=True)
+    ids = ids.to(device)
+    mask = mask.to(device)
+    seq_lens = mask.gt(0).sum(dim=1).long()     # 每条文本真实长度
+    context = self.model(ids, mask)             # [B, 512, 4096]
+    return [u[:v] for u, v in zip(context, seq_lens)]  # 去 padding → [L, 4096] 列表
+
+# —— t2v() 里的调用：正向 prompt 与负向 prompt 各编码一次 ——
+if not self.t5_cpu:
+    self.text_encoder.model.to(self.device)
+    context      = self.text_encoder([input_prompt], self.device)
+    context_null = self.text_encoder([n_prompt],     self.device)
+    if offload_model:
+        self.text_encoder.model.cpu()           # 编码完立即下放 CPU 腾显存`
+  },
+  "noise": {
+    name: "④ 初始化高斯噪声 N(0,1)",
+    file: "wan/textimage2video.py · t2v (311-320)",
+    code:
+`# 要去噪的「视频 latent」初值：标准高斯噪声，形状 = target_shape
+noise = [
+    torch.randn(
+        target_shape[0],   # 48  (z_dim)
+        target_shape[1],   # 31  (时间)
+        target_shape[2],   # 44  (高)
+        target_shape[3],   # 80  (宽)
+        dtype=torch.float32,
+        device=self.device,
+        generator=seed_g)  # 用固定种子的生成器 → 可复现
+]`
+  },
+  "shape": {
+    name: "②③ 形状 / 序列长度计算",
+    file: "wan/textimage2video.py · t2v (284-291)",
+    code:
+`# ② latent 目标形状：像素尺寸 → VAE 压缩空间
+F = frame_num                                       # 121
+target_shape = (self.vae.model.z_dim,               # 48
+                (F - 1) // self.vae_stride[0] + 1,  # 时间: (121-1)//4+1 = 31
+                size[1] // self.vae_stride[1],      # 高:   704//16 = 44
+                size[0] // self.vae_stride[2])      # 宽:   1280//16 = 80
+
+# ③ DiT 序列长度：latent 再按 patch_size(1,2,2) 切块展平，并向 sp_size 对齐
+seq_len = math.ceil((target_shape[2] * target_shape[3]) /
+                    (self.patch_size[1] * self.patch_size[2]) *
+                    target_shape[1] / self.sp_size) * self.sp_size
+# = ceil(44*80 / (2*2) * 31) = 31 * 880 = 27,280 个 token`
+  },
+  "patch": {
+    name: "patch_embedding（Conv3d 切块）",
+    file: "wan/modules/model.py · __init__ (378) ＋ forward (448-457)",
+    code:
+`# 定义：3D 卷积，kernel=stride=(1,2,2)，等价于 ViT 的 patchify
+self.patch_embedding = nn.Conv3d(
+    in_dim, dim, kernel_size=patch_size, stride=patch_size)
+    # in_dim=48 → dim=3072
+
+# forward：latent 立方体 → token 序列
+x = [self.patch_embedding(u.unsqueeze(0)) for u in x]  # (48,31,44,80)→(3072,31,22,40)
+grid_sizes = torch.stack(
+    [torch.tensor(u.shape[2:], dtype=torch.long) for u in x])  # 记下 (F,H,W)=(31,22,40)
+x = [u.flatten(2).transpose(1, 2) for u in x]          # → (1, 31*22*40=27280, 3072)
+seq_lens = torch.tensor([u.size(1) for u in x], dtype=torch.long)
+# 不足 seq_len 的部分用零 padding 补齐（多卡 varlen 对齐）
+x = torch.cat([
+    torch.cat([u, u.new_zeros(1, seq_len - u.size(1), u.size(2))], dim=1)
+    for u in x
+])`
+  },
+  "text-emb": {
+    name: "text_embedding（4096 → 3072）",
+    file: "wan/modules/model.py · __init__ (380-382) ＋ forward (471-478)",
+    code:
+`# 定义：把 4096 维 UMT5 文本投到 DiT 的隐藏维 3072
+self.text_embedding = nn.Sequential(
+    nn.Linear(4096, dim), nn.GELU('tanh'), nn.Linear(dim, dim))
+
+# forward：先把每条文本零-pad 到 text_len(512)，再投影
+context_lens = None
+context = self.text_embedding(
+    torch.stack([
+        torch.cat([u, u.new_zeros(self.text_len - u.size(0), u.size(1))])
+        for u in context
+    ]))   # → [B, 512, 3072]，作为后续 Cross-Attention 的 K/V 来源`
+  },
+  "self-attn": {
+    name: "Self-Attention（视频 token 作 Q/K/V）",
+    file: "wan/modules/model.py · WanAttentionBlock.forward (242-247)",
+    code:
+`# 自注意力：时空全局，先用 AdaLN 调制(shift=e0, scale=e1)，再 gate=e2 残差
+y = self.self_attn(
+    self.norm1(x).float() * (1 + e[1].squeeze(2)) + e[0].squeeze(2),
+    seq_lens, grid_sizes, freqs)        # freqs = 3D RoPE
+with torch.amp.autocast('cuda', dtype=torch.float32):
+    x = x + y * e[2].squeeze(2)         # gate=e2（残差门控）
+# self_attn 内部：q,k,v = Linear(x)；对 q,k 施加 3D RoPE；flash_attention(q,k,v)`
+  },
+  "cross-attn": {
+    name: "Cross-Attention（文本作 K/V，视频作 Q）",
+    file: "wan/modules/model.py · WanAttentionBlock.cross_attn_ffn (249-258)",
+    code:
+`# 交叉注意力 + FFN：把 prompt 语义注入视频 token
+def cross_attn_ffn(x, context, context_lens, e):
+    # query=视频 x，key/value=文本 context；注意：Cross-Attn 不吃时间步调制
+    x = x + self.cross_attn(self.norm3(x), context, context_lens)
+    # FFN：AdaLN 调制(shift=e3, scale=e4)，gate=e5
+    y = self.ffn(
+        self.norm2(x).float() * (1 + e[4].squeeze(2)) + e[3].squeeze(2))
+    with torch.amp.autocast('cuda', dtype=torch.float32):
+        x = x + y * e[5].squeeze(2)
+    return x
+
+x = cross_attn_ffn(x, context, context_lens, e)`
+  },
+  "time-mlp": {
+    name: "time_embedding（时间步 → 6 路调制）",
+    file: "wan/modules/model.py · __init__ (384-386) ＋ forward (459-469)",
+    code:
+`# 定义：正弦编码 → MLP 得 e；time_projection 再投到 6 份调制参数
+self.time_embedding  = nn.Sequential(
+    nn.Linear(freq_dim, dim), nn.SiLU(), nn.Linear(dim, dim))
+self.time_projection = nn.Sequential(
+    nn.SiLU(), nn.Linear(dim, dim * 6))      # ★ ×6
+
+# forward：TI2V 特有「逐 token 时间步」—— t 形状 [B, seq_len]
+if t.dim() == 1:
+    t = t.expand(t.size(0), seq_len)
+with torch.amp.autocast('cuda', dtype=torch.float32):
+    bt = t.size(0); t = t.flatten()
+    e  = self.time_embedding(                      # e:[B,L,3072] 基础嵌入 → 喂给 head(x, e)
+        sinusoidal_embedding_1d(self.freq_dim, t)
+            .unflatten(0, (bt, seq_len)).float())
+    e0 = self.time_projection(e).unflatten(2, (6, self.dim))  # e0:[B,L,6,3072] → 传给每个 Block
+# ★全局只算一次；e0 进 Block 后还要 +modulation 才得本层调制（见 AdaLN 模块）`
+  },
+  "adaln": {
+    name: "AdaLN 调制：注入每个 Block 的 norm",
+    file: "wan/modules/model.py · WanAttentionBlock.forward (237-247)",
+    code:
+`# ★这里的形参 e 收到的是外层的 e0（[B,L,6,dim]），同名≠同张量
+# modulation: 每个 Block 独有的可学习参数 [1,6,dim]
+with torch.amp.autocast('cuda', dtype=torch.float32):
+    e = (self.modulation.unsqueeze(0) + e).chunk(6, dim=2)
+    # 全局信号 e0 + 本层偏置 modulation，再拆成 6 份本层专属调制：
+    #   e[0]=shift, e[1]=scale, e[2]=gate  → 作用于 Self-Attention
+    #   e[3]=shift, e[4]=scale, e[5]=gate  → 作用于 FFN
+# 用法：norm(x) * (1 + scale) + shift，输出再 * gate（残差门控）
+y = self.self_attn(self.norm1(x).float() * (1 + e[1]) + e[0], ...)
+x = x + y * e[2]`
+  },
+  "blocks": {
+    name: "30 × WanAttentionBlock（逐层交互）",
+    file: "wan/modules/model.py · forward 主循环 (489-490) ＋ Block.forward (219-259)",
+    code:
+`# DiT 主干：30 个 Block 顺序堆叠，维度始终 [B, L, 3072] 不变
+kwargs = dict(e=e0, seq_lens=seq_lens, grid_sizes=grid_sizes,
+              freqs=self.freqs, context=context, context_lens=context_lens)
+for block in self.blocks:        # num_layers = 30
+    x = block(x, **kwargs)
+
+# —— 每个 Block 内部（Self-Attn → Cross-Attn → FFN，残差贯穿）——
+def forward(self, x, e, seq_lens, grid_sizes, freqs, context, context_lens):
+    e = (self.modulation.unsqueeze(0) + e).chunk(6, dim=2)     # 6 路调制
+    # 1) 自注意力（时空 + RoPE）
+    y = self.self_attn(self.norm1(x).float()*(1+e[1])+e[0], seq_lens, grid_sizes, freqs)
+    x = x + y * e[2]
+    # 2) 交叉注意力（文本条件）+ 3) FFN
+    x = x + self.cross_attn(self.norm3(x), context, context_lens)
+    y = self.ffn(self.norm2(x).float()*(1+e[4])+e[3])
+    x = x + y * e[5]
+    return x`
+  },
+  "noise-pred": {
+    name: "Head + unpatchify → noise_pred",
+    file: "wan/modules/model.py · forward (492-497) ＋ unpatchify (499-522)",
+    code:
+`# head：最后一层 AdaLN + Linear，把 3072 投回 patch (out_dim*prod(patch_size))
+x = self.head(x, e)              # [B, L, 48*1*2*2]
+
+# unpatchify：token 序列 → 还原成 latent 立方体（与输入同形）
+x = self.unpatchify(x, grid_sizes)
+return [u.float() for u in x]    # → (48, 31, 44, 80)，即预测的速度场 v
+
+def unpatchify(self, x, grid_sizes):
+    c = self.out_dim
+    out = []
+    for u, v in zip(x, grid_sizes.tolist()):
+        u = u[:math.prod(v)].view(*v, *self.patch_size, c)
+        u = torch.einsum('fhwpqrc->cfphqwr', u)      # 重排回 (C,F,H,W)
+        out.append(u.reshape(c, *[i * j for i, j in zip(v, self.patch_size)]))
+    return out`
+  },
+  "cfg": {
+    name: "CFG（Classifier-Free Guidance）",
+    file: "wan/textimage2video.py · t2v (380-386)",
+    code:
+`# 每步 DiT 前向两次：一次看 prompt(cond)，一次看负向/空 prompt(uncond)
+noise_pred_cond   = self.model(latent_model_input, t=timestep, **arg_c)[0]
+noise_pred_uncond = self.model(latent_model_input, t=timestep, **arg_null)[0]
+
+# 沿「贴合 prompt」方向外推；guide_scale=5.0 越大越贴合但可能过饱和
+noise_pred = noise_pred_uncond + guide_scale * (
+    noise_pred_cond - noise_pred_uncond)
+# 代价：每步两次前向 DiT，是推理耗时的主要来源`
+  },
+  "scheduler": {
+    name: "scheduler.step（UniPC 推进一步）",
+    file: "wan/textimage2video.py · t2v (335-342, 388-394)",
+    more: {href: "#unipc", text: "深入：UniPC 求解器逻辑（5.1 节）→ 三阶段拆解 set_timesteps / convert_model_output / step"},
+    code:
+`# 50 步时间表（流匹配 / UniPC 求解器）
+sample_scheduler = FlowUniPCMultistepScheduler(
+    num_train_timesteps=self.num_train_timesteps,   # 1000
+    shift=1, use_dynamic_shifting=False)
+sample_scheduler.set_timesteps(sampling_steps, device=self.device, shift=shift)  # shift=5.0
+timesteps = sample_scheduler.timesteps
+
+# 每步：只接收 DiT 输出 noise_pred + 当前 latent + t，把 latent 往 t→0 推进一步
+temp_x0 = sample_scheduler.step(
+    noise_pred.unsqueeze(0),
+    t,
+    latents[0].unsqueeze(0),
+    return_dict=False,
+    generator=seed_g)[0]
+latents = [temp_x0.squeeze(0)]`
+  },
+  "vae-decode": {
+    name: "⑥ VAE 解码（latent → 像素）",
+    file: "wan/modules/vae2_2.py · Wan2_2_VAE.decode (1038-1049) ＋ t2v (401)",
+    code:
+`# 去噪结束后，把 latent 解码回像素视频
+videos = self.vae.decode(x0)     # (48,31,44,80) → (3,121,704,1280)
+
+# —— Wan2_2_VAE.decode（高压缩 2.2 VAE，stride 4×16×16）——
+def decode(self, zs):
+    if not isinstance(zs, list):
+        raise TypeError("zs should be a list")
+    with amp.autocast(dtype=self.dtype):
+        return [
+            self.model.decode(u.unsqueeze(0), self.scale)
+                .float().clamp_(-1, 1).squeeze(0)   # 数值夹到 [-1,1]
+            for u in zs
+        ]`
+  },
+  "save": {
+    name: "⑦ 存盘 save_video",
+    file: "generate.py · generate (542-557)",
+    code:
+`if rank == 0:
+    if args.save_file is None:
+        formatted_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        formatted_prompt = args.prompt.replace(" ", "_").replace("/", "_")[:50]
+        args.save_file = f"{args.task}_{args.size}_..._{formatted_time}.mp4"
+
+    save_video(
+        tensor=video[None],
+        save_file=args.save_file,
+        fps=cfg.sample_fps,          # 24
+        nrow=1,
+        normalize=True,
+        value_range=(-1, 1))         # 反归一化 (-1,1) → (0,255) 后写 mp4`
+  },
+  "i2v": {
+    name: "图生视频 i2v 分支（同一函数体）",
+    file: "wan/textimage2video.py · i2v (461-512, 549-598)",
+    code:
+`# ① 把输入图裁成 VAE 友好尺寸（按目标面积）
+ow, oh = best_output_size(iw, ih, dw, dh, max_area)
+img = img.resize((round(iw*scale), round(ih*scale)), Image.LANCZOS)  # + center-crop
+img = TF.to_tensor(img).sub_(0.5).div_(0.5).to(self.device).unsqueeze(1)
+
+# ② 首帧编码成 latent
+z = self.vae.encode([img])
+
+# ③ 造「首帧位置=0、其余=1」的 mask，并把首帧 latent 钉入初值
+mask1, mask2 = masks_like([noise], zero=True)
+latent = (1. - mask2[0]) * z[0] + mask2[0] * noise
+
+for _, t in enumerate(tqdm(timesteps)):
+    ...                                  # 同 t2v：DiT 两次前向 + CFG
+    temp_x0 = sample_scheduler.step(noise_pred.unsqueeze(0), t,
+                                    latent.unsqueeze(0), return_dict=False,
+                                    generator=seed_g)[0]
+    latent = temp_x0.squeeze(0)
+    # ★ 每步去噪后都把首帧 latent「钉回去」，只生成后续帧
+    latent = (1. - mask2[0]) * z[0] + mask2[0] * latent
+
+# generate() 入口：if img is not None → self.i2v(...)，否则 self.t2v(...)`
+  }
+};
+
+/* ===== 图 3 模块 → 源码映射（wan/modules/model.py）===== */
+const FIG3_CODE = {
+  "latent-in": {
+    name: "输入：带噪 latent x",
+    file: "wan/modules/model.py · WanModel.forward (410-417)",
+    code:
+`def forward(self, x, t, context, seq_len, y=None):
+    # x:       List[Tensor]，每个 [C_in=48, F=31, H=44, W=80]
+    # t:       [B, seq_len] 逐 token 时间步（TI2V 特性）
+    # context: List[Tensor]，每个 [L<=512, 4096]（UMT5 文本）
+    # seq_len: patch 后对齐的 token 数（27280）
+    # 返回：与输入同形的速度场 [C_out=48, F, H, W]`
+  },
+  "t-in": {
+    name: "输入：时间步 t（逐 token）",
+    file: "wan/modules/model.py · WanModel.forward (459-461)",
+    code:
+`# 普通 DiT 一个样本一个标量 t；TI2V 的 t 是 [B, seq_len]——每个 latent token 各有时间步
+if t.dim() == 1:
+    t = t.expand(t.size(0), seq_len)   # 标量时间步广播成逐 token
+# 这让「首帧已知(t=0)、其余帧待生成(t=T)」能在同一次前向里混合 → 图生视频的底层机制`
+  },
+  "ctx-in": {
+    name: "输入：文本 context",
+    file: "wan/modules/t5.py · T5EncoderModel.__call__ (506-513)",
+    code:
+`def __call__(self, texts, device):
+    ids, mask = self.tokenizer(texts, return_mask=True, add_special_tokens=True)
+    seq_lens = mask.gt(0).sum(dim=1).long()
+    context = self.model(ids, mask)            # [B, 512, 4096]
+    return [u[:v] for u, v in zip(context, seq_lens)]  # 去 padding → [L, 4096] 列表`
+  },
+  "patch": {
+    name: "patch_embedding（patchify：压下去）",
+    file: "wan/modules/model.py · __init__ (378) ＋ forward (448-457)",
+    code:
+`# 定义：3D 卷积 kernel=stride=(1,2,2)，通道 in_dim=48 → dim=3072
+self.patch_embedding = nn.Conv3d(in_dim, dim, kernel_size=patch_size, stride=patch_size)
+
+# forward：latent 立方体 → token 序列（沙漏的「去程」）
+x = [self.patch_embedding(u.unsqueeze(0)) for u in x]  # (48,31,44,80)→(3072,31,22,40)
+grid_sizes = torch.stack(
+    [torch.tensor(u.shape[2:], dtype=torch.long) for u in x])  # ★记下(F,H,W)=(31,22,40)
+x = [u.flatten(2).transpose(1, 2) for u in x]          # → (1, 31*22*40=27280, 3072)
+seq_lens = torch.tensor([u.size(1) for u in x], dtype=torch.long)
+x = torch.cat([                                        # 零 padding 到 seq_len（多卡 varlen）
+    torch.cat([u, u.new_zeros(1, seq_len - u.size(1), u.size(2))], dim=1) for u in x])
+# 注意：H/W 各除 2（stride=2），F 不变（time stride=1）；grid_sizes 留给 unpatchify 还原`
+  },
+  "time-emb": {
+    name: "time_embedding（→ 6 路 AdaLN 调制）｜注意 e / e0 / Block 内 e 是三步，非同一张量",
+    file: "wan/modules/model.py · __init__ (384-386) ＋ forward (462-469) ＋ Block.__init__ (217)/forward (239)",
+    code:
+`self.time_embedding  = nn.Sequential(nn.Linear(freq_dim, dim), nn.SiLU(), nn.Linear(dim, dim))
+self.time_projection = nn.Sequential(nn.SiLU(), nn.Linear(dim, dim * 6))   # ★ ×6
+
+# ===== 作用域 A：WanModel.forward —— 全局只算一次，30 个 Block 共享 =====
+with torch.amp.autocast('cuda', dtype=torch.float32):
+    bt = t.size(0); t = t.flatten()
+    # ① 基础时间嵌入 e（3072 维）—— 之后直接喂给输出层 self.head(x, e)
+    e  = self.time_embedding(
+        sinusoidal_embedding_1d(self.freq_dim, t).unflatten(0, (bt, seq_len)).float())
+    # ② ×6 投影得 e0 —— 打包进 kwargs(e=e0) 传给每个 Block
+    e0 = self.time_projection(e).unflatten(2, (6, self.dim))   # e0: [B, L, 6, 3072]
+
+# 两个产物去向不同：
+#   e  ── [B,L,3072]   → self.head(x, e)（输出层只需 2 路调制）
+#   e0 ── [B,L,6,3072] → block(x, e=e0, ...)（每个 Block 的 6 路调制原料）
+
+# ===== 作用域 B：WanAttentionBlock.forward —— 每个 Block 各算一次（×30）=====
+# __init__：每个 Block 独有的可学习偏置，常规随机初始化（非零初始化）
+self.modulation = nn.Parameter(torch.randn(1, 6, dim) / dim**0.5)   # [1, 6, 3072]
+
+def forward(self, x, e, ...):        # ★形参 e 收到的其实是外层的 e0（同名≠同张量）
+    # ③ 加本层「个性化偏置」modulation 后再 chunk(6) → 本层真正的 (shift,scale,gate)×2
+    e = (self.modulation.unsqueeze(0) + e).chunk(6, dim=2)   # modulation: 每层独有 [1,6,dim]
+# 全局信号 e0 + 每层偏置 modulation = 两级结构：同一时间信号在每层被微调成本层专属调制`
+  },
+  "text-emb": {
+    name: "text_embedding（4096 → 3072）",
+    file: "wan/modules/model.py · __init__ (380-382) ＋ forward (471-478)",
+    code:
+`self.text_embedding = nn.Sequential(
+    nn.Linear(4096, dim), nn.GELU('tanh'), nn.Linear(dim, dim))
+
+context_lens = None
+context = self.text_embedding(
+    torch.stack([                                     # 先把每条文本零-pad 到 text_len=512
+        torch.cat([u, u.new_zeros(self.text_len - u.size(0), u.size(1))])
+        for u in context]))                           # → [B, 512, 3072]，作 Cross-Attn 的 K/V`
+  },
+  "blocks": {
+    name: "30 × WanAttentionBlock（主循环 + Block 内三路接线）",
+    file: "wan/modules/model.py · forward (480-490) ＋ WanAttentionBlock.forward (219-259)",
+    code:
+`# 三类输入打包成 kwargs，顺序流过 30 个 Block，形状始终 [B, 27280, 3072] 不变
+kwargs = dict(e=e0, seq_lens=seq_lens, grid_sizes=grid_sizes,
+              freqs=self.freqs, context=context, context_lens=context_lens)
+for block in self.blocks:        # num_layers = 30
+    x = block(x, **kwargs)
+# e0(时间)→调制 norm；context(文本)→Cross-Attn 的 K/V；freqs→Self-Attn 的 3D RoPE
+
+# —— 每个 Block 内部：编排者负责调制+残差，注意力计算委托给两个子模块 ——
+def forward(self, x, e, seq_lens, grid_sizes, freqs, context, context_lens):
+    e = (self.modulation.unsqueeze(0) + e).chunk(6, dim=2)        # 6 路调制 e[0..5]
+    # ① Self-Attn 分支：先 AdaLN 调制(e0,e1)，再调用子模块，最后 gate=e2 残差
+    y = self.self_attn(self.norm1(x).float()*(1+e[1])+e[0], seq_lens, grid_sizes, freqs)
+    x = x + y * e[2]
+    # ② Cross-Attn 分支：调用子模块注入文本语义；★无时间步调制
+    x = x + self.cross_attn(self.norm3(x), context, context_lens)
+    # ③ FFN 分支：AdaLN 调制(e3,e4)，gate=e5 残差
+    y = self.ffn(self.norm2(x).float()*(1+e[4])+e[3])
+    x = x + y * e[5]
+    return x
+# self_attn / cross_attn 是 Block 持有的子模块 → 点 Self-Attention / Cross-Attention 看其 forward 实现`
+  },
+  "self-attn": {
+    name: "Self-Attention + 3D RoPE（两层：Block 调用 → SelfAttn 实现）",
+    file: "wan/modules/model.py · WanAttentionBlock.forward (242-247) → WanSelfAttention.forward (126-155)",
+    code:
+`# ── 第 1 层（编排者）WanAttentionBlock.forward：负责 AdaLN 调制 + 残差，
+#    真正的注意力计算「委托」给子模块 self.self_attn ──
+#    AdaLN 目的：用时间步 t 生成的 (shift,scale,gate) 告诉本层「当前噪声水平」，
+#    同一套权重据此在 50 步里表现出不同去噪行为（FiLM 式条件注入）。
+y = self.self_attn(                                       # ┐ 调用 ▼ 第 2 层
+        self.norm1(x).float() * (1 + e[1].squeeze(2))     # │ 传入「已调制」的 x
+                              + e[0].squeeze(2),          # │ scale=e1, shift=e0
+        seq_lens, grid_sizes, freqs)                      # ┘ ★调制只在这层做，子模块不碰 e
+x = x + y * e[2].squeeze(2)                               #   gate=e2：残差门控（缩放本层贡献）
+
+
+# ── 第 2 层（被上面 self.self_attn(...) 调用）WanSelfAttention.forward ──
+#    职责：收到「已调制」的 x，自己生成 Q/K/V，对 q,k 加 3D RoPE，做注意力
+def qkv_fn(x):                          # Q=K=V 都来自同一个视频 x（自注意力）
+    q = self.norm_q(self.q(x)).view(b, s, n, d)
+    k = self.norm_k(self.k(x)).view(b, s, n, d)
+    v = self.v(x).view(b, s, n, d)
+    return q, k, v
+q, k, v = qkv_fn(x)
+x = flash_attention(q=rope_apply(q, grid_sizes, freqs),   # ★只有自注意力加 RoPE
+                    k=rope_apply(k, grid_sizes, freqs),
+                    v=v, k_lens=seq_lens, window_size=self.window_size)
+return self.o(x.flatten(2))             # 输出投影，返回给第 1 层做残差`
+  },
+  "cross-attn": {
+    name: "Cross-Attention（两层：Block 调用 → CrossAttn 实现）",
+    file: "wan/modules/model.py · WanAttentionBlock.forward (250-251) → WanCrossAttention.forward (160-180)",
+    code:
+`# ── 第 1 层（编排者）WanAttentionBlock.forward 里的交叉注意力调用 ──
+#    query=视频 x，key/value=文本 context；★Cross-Attn 不吃时间步调制（无 e）——
+#    它的条件信号来自文本 K/V，与「噪声水平」无关，故无需 AdaLN。
+x = x + self.cross_attn(self.norm3(x), context, context_lens)   # 调用 ▼ 第 2 层
+
+
+# ── 第 2 层（被上面 self.cross_attn(...) 调用）WanCrossAttention.forward ──
+#    继承自 WanSelfAttention，但 Q 与 K/V 来源不同 → 把文本语义注入视频
+q = self.norm_q(self.q(x)).view(b, -1, n, d)          # 视频 x   作 Q
+k = self.norm_k(self.k(context)).view(b, -1, n, d)    # 文本 ctx 作 K
+v = self.v(context).view(b, -1, n, d)                 # 文本 ctx 作 V
+x = flash_attention(q, k, v, k_lens=context_lens)     # ★无 RoPE：文本无空间位置
+return self.o(x.flatten(2))             # 输出投影，返回给第 1 层做残差`
+  },
+  "ffn": {
+    name: "FFN 3072→14336→3072",
+    file: "wan/modules/model.py · __init__ (212-214) ＋ Block (252-255)",
+    code:
+`self.ffn = nn.Sequential(
+    nn.Linear(dim, ffn_dim), nn.GELU(approximate='tanh'), nn.Linear(ffn_dim, dim))
+    # dim=3072, ffn_dim=14336
+
+# Block 内：AdaLN 调制(shift=e3, scale=e4) → ffn → gate=e5 残差
+y = self.ffn(self.norm2(x).float() * (1 + e[4].squeeze(2)) + e[3].squeeze(2))
+x = x + y * e[5].squeeze(2)`
+  },
+  "head": {
+    name: "Head + unpatchify（unpatchify：抬回来）★沙漏逆操作",
+    file: "wan/modules/model.py · Head (262-291) ＋ unpatchify (499-522)",
+    code:
+`# ★关键：Head 输出维度 = prod(patch_size)*out_dim = (1*2*2)*48 = 192，不是 48！
+out_dim = math.prod(patch_size) * out_dim     # 192
+self.head = nn.Linear(dim, out_dim)           # Linear(3072 → 192)
+
+def forward(self, x, e):                      # 最后一层 AdaLN（2 路调制）
+    e = (self.modulation.unsqueeze(0) + e.unsqueeze(2)).chunk(2, dim=2)
+    return self.head(self.norm(x) * (1 + e[1].squeeze(2)) + e[0].squeeze(2))
+    # → (1, 27280, 192)：每个 token 吐出它代表的 1×2×2 小块的全部 48 通道值
+
+# —— unpatchify：把 192 维拆回小块、贴回空间，精确还原原始形状 ——
+def unpatchify(self, x, grid_sizes):
+    c = self.out_dim                          # 48
+    out = []
+    for u, v in zip(x, grid_sizes.tolist()):  # v=(F,H,W)=(31,22,40)，去程记下的
+        u = u[:math.prod(v)].view(*v, *self.patch_size, c)   # (31,22,40, 1,2,2, 48)
+        u = torch.einsum('fhwpqrc->cfphqwr', u)              # 重排 → (48,31,1,22,2,40,2)
+        u = u.reshape(c, *[i * j for i, j in zip(v, self.patch_size)])  # (48,31,44,80)
+        out.append(u)                         # 22*2=44, 40*2=80 → 空间被「展回」原尺寸
+    return out`
+  },
+  "vout": {
+    name: "输出：预测速度场 v",
+    file: "wan/modules/model.py · forward (492-497)",
+    code:
+`x = self.head(x, e)                # (1, 27280, 3072) → (1, 27280, 192)
+x = self.unpatchify(x, grid_sizes) # → (48, 31, 44, 80)，与输入 latent x 完全同形
+return [u.float() for u in x]
+# 必须同形：scheduler.step(noise_pred, t, latent) 要逐元素地用 v 更新 latent`
+  }
+};
+
+
+/* ===== 图 4 模块 → 源码映射（AdaLN 调制三块）===== */
+const FIG4_CODE = {
+  "time-mod": {
+    name: "时间步 → 6 路调制源（全局 e0 ＋ 本层 modulation → chunk6）",
+    file: "wan/modules/model.py · forward (459-469) ＋ WanAttentionBlock.forward (237-241)",
+    code:
+`# ── 第 ① 步（全局，整个 forward 只算一次）──
+self.time_projection = nn.Sequential(
+    nn.SiLU(), nn.Linear(dim, dim * 6))           # ★ 投到 6 份
+with torch.amp.autocast('cuda', dtype=torch.float32):
+    e  = self.time_embedding(...)                 # 基础时间嵌入 [B,L,dim]
+    e0 = self.time_projection(e).unflatten(2, (6, self.dim))
+    # e0: [B,L,6,dim] —— 30 个 Block 共享这同一张量
+
+# ── 第 ② 步（每个 Block 内各算一次，×30）──
+# 形参 e 收到的就是上面的全局 e0；modulation 是本 Block 独有的可学习偏置 [1,6,dim]
+with torch.amp.autocast('cuda', dtype=torch.float32):
+    e = (self.modulation.unsqueeze(0) + e).chunk(6, dim=2)
+    # 全局信号 + 本层偏置 → 再拆成 6 份「本层专属」调制 e[0..5]：
+    #   e[0]=shift e[1]=scale e[2]=gate  → Self-Attention
+    #   e[3]=shift e[4]=scale e[5]=gate  → FFN
+# ⚠ 同名陷阱：图中 e[0..5] ≠ 上方全局 e0，差一步 (+modulation).chunk(6)`
+  },
+  "sa-adaln": {
+    name: "Self-Attention 的 AdaLN（norm1 shift/scale ＋ gate e[2] 残差）",
+    file: "wan/modules/model.py · WanAttentionBlock.forward (242-247)",
+    code:
+`# 公式：norm(x) * (1 + scale) + shift  →  子模块  →  输出再 * gate（残差门控）
+y = self.self_attn(
+    self.norm1(x).float() * (1 + e[1].squeeze(2)) + e[0].squeeze(2),
+    seq_lens, grid_sizes, freqs)        # freqs = 3D RoPE，仅作用于 q/k
+with torch.amp.autocast('cuda', dtype=torch.float32):
+    x = x + y * e[2].squeeze(2)         # gate=e[2]，自适应缩放本层贡献
+# norm1 是 elementwise_affine=False 的 LayerNorm —— 缩放/平移全交给 AdaLN`
+  },
+  "ffn-adaln": {
+    name: "FFN 的 AdaLN（norm2 shift/scale ＋ gate e[5] 残差）",
+    file: "wan/modules/model.py · WanAttentionBlock.cross_attn_ffn (250-256)",
+    code:
+`# Cross-Attn 先做（不吃时间步调制），再到 FFN 这一路 AdaLN：
+y = self.ffn(
+    self.norm2(x).float() * (1 + e[4].squeeze(2)) + e[3].squeeze(2))
+with torch.amp.autocast('cuda', dtype=torch.float32):
+    x = x + y * e[5].squeeze(2)         # gate=e[5]
+# ffn: Linear(3072→14336) → GELU('tanh') → Linear(14336→3072)`
+  }
+};
+
+/* ===== 图 5 模块 → 源码映射（wan/modules/vae2_2.py）===== */
+const FIG5_CODE = {
+  "patchify": {
+    name: "patchify（2×2 空间块 → 通道，压缩第一步）",
+    file: "wan/modules/vae2_2.py · patchify (280-297) ＋ WanVAE_.encode (784-785)",
+    code:
+`# encode 一进来就先 patchify：把 2×2 的空间块塞进通道维
+def encode(self, x, scale):
+    self.clear_cache()
+    x = patchify(x, patch_size=2)        # (1,3,121,704,1280) → (1,12,121,352,640)
+    ...
+
+# patchify 本体：einops 重排，H/W 各除 2，通道 ×4（3→12）
+def patchify(x, patch_size):             # patch_size=2
+    if x.dim() == 5:
+        x = rearrange(
+            x, "b c f (h q) (w r) -> b (c r q) f h w", q=patch_size, r=patch_size)
+    return x
+# ★ 这一步先拿到 2× 空间压缩；剩下的 8× 交给 Encoder 的下采样 → 合计 16× 空间压缩`
+  },
+  "encoder": {
+    name: "Encoder3d（conv1 → 3×Down → middle → head 出 48ch）",
+    file: "wan/modules/vae2_2.py · Encoder3d.forward (559-614) ＋ WanVAE_.encode 分块 (786-810)",
+    code:
+`# 结构：CausalConv3d(12→dim) → 3×Down_ResidualBlock(空间↓8·时间↓4) → middle → head(→z_dim)
+def forward(self, x, feat_cache=None, feat_idx=[0]):
+    x = self.conv1(x, feat_cache[idx]); ...      # 12 → dims[0]
+    for layer in self.downsamples: x = layer(x, feat_cache, feat_idx)  # 3 级下采样
+    for layer in self.middle:      x = layer(x)  # ResBlock → AttentionBlock → ResBlock
+    for layer in self.head:        x = layer(x)  # RMS_norm → SiLU → CausalConv3d(→z_dim)
+    return x
+
+# —— encode 沿时间分块喂：iter_ = 1 + (t-1)//4，首块 1 帧、其余每 4 帧一块 ——
+t = x.shape[2]; iter_ = 1 + (t - 1) // 4
+for i in range(iter_):
+    self._enc_conv_idx = [0]                     # 每块复位 conv 游标，但 feat_map 跨块保留
+    if i == 0: out = self.encoder(x[:, :, :1], feat_cache=self._enc_feat_map, ...)
+    else:      out_ = self.encoder(x[:, :, 1+4*(i-1):1+4*i], ...); out = torch.cat([out, out_], 2)`
+  },
+  "latent": {
+    name: "latent z：逐通道归一化 ＋ 中间层单头注意力（z_dim=48）",
+    file: "wan/modules/vae2_2.py · WanVAE_.encode (799-810) ＋ Wan2_2_VAE.__init__ (1012) ＋ AttentionBlock (255-278)",
+    code:
+`# ① conv1 出 (mu, log_var)，取 mu，再按预存的 48 维 mean/std 逐通道归一化
+mu, log_var = self.conv1(out).chunk(2, dim=1)
+mu = (mu - scale[0].view(1, self.z_dim, 1, 1, 1)) * scale[1].view(1, self.z_dim, 1, 1, 1)
+# scale 在构造时就定死：self.scale = [mean, 1.0 / std]   # 各 48 维常量（z_dim=48）
+# → 输出 latent z 形状 (48, 31, 44, 80)，decode 时做逆变换 z/scale[1] + scale[0]
+
+# ② Encoder/Decoder 的 middle 各夹一个「单头因果自注意力」AttentionBlock：
+def forward(self, x):                       # x: (b,c,t,h,w)
+    x = rearrange(x, "b c t h w -> (b t) c h w")   # 每帧独立做空间自注意力
+    q, k, v = self.to_qkv(self.norm(x)).chunk(3, dim=-1)
+    x = F.scaled_dot_product_attention(q, k, v)    # 单头
+    return self.proj(x) + identity                 # proj 权重零初始化 → 初始为恒等`
+  },
+  "decoder": {
+    name: "Decoder3d（conv1 → middle → 3×Up → head 出 12ch，与 Encoder 对称）",
+    file: "wan/modules/vae2_2.py · Decoder3d.forward (672-723) ＋ WanVAE_.decode 分块 (812-839)",
+    code:
+`# 结构与 Encoder 镜像：CausalConv3d(z_dim→dim) → middle → 3×Up_ResidualBlock(空间↑8·时间↑4) → head(→12)
+def forward(self, x, feat_cache=None, feat_idx=[0], first_chunk=False):
+    x = self.conv1(x, feat_cache[idx]); ...       # z_dim → dims[0]
+    for layer in self.middle:   x = layer(x)      # ResBlock → AttentionBlock → ResBlock
+    for layer in self.upsamples:x = layer(x, feat_cache, feat_idx, first_chunk)  # 3 级上采样
+    for layer in self.head:     x = layer(x)      # RMS_norm → SiLU → CausalConv3d(→12)
+
+# —— decode 沿时间每「1 个 latent 帧」一块；首块 first_chunk=True（对齐因果时间膨胀）——
+iter_ = z.shape[2]; x = self.conv2(z)
+for i in range(iter_):
+    self._conv_idx = [0]
+    if i == 0: out = self.decoder(x[:, :, i:i+1], feat_cache=self._feat_map, first_chunk=True)
+    else:      out_ = self.decoder(x[:, :, i:i+1], ...); out = torch.cat([out, out_], 2)`
+  },
+  "unpatch": {
+    name: "unpatchify（通道里的 2×2 块 → 摊回空间，patchify 的逆）",
+    file: "wan/modules/vae2_2.py · unpatchify (299-314) ＋ WanVAE_.decode (837)",
+    code:
+`# decode 最后一步：把通道里藏的 2×2 块摊回空间，12ch → 3ch
+out = unpatchify(out, patch_size=2)      # (1,12,121,352,640) → (1,3,121,704,1280)
+
+# unpatchify 本体：patchify 的精确逆操作
+def unpatchify(x, patch_size):           # patch_size=2
+    if x.dim() == 5:
+        x = rearrange(
+            x, "b (c r q) f h w -> b c f (h q) (w r)", q=patch_size, r=patch_size)
+    return x
+# ★ 至此 Decoder 的 8× 上采样 + unpatch 的 2× = 还原 16× 空间，得回原始像素分辨率`
+  },
+  "chunk": {
+    name: "因果卷积 + 分块 + feat_cache（省显存、保因果、结果等价整段）",
+    file: "wan/modules/vae2_2.py · CausalConv3d (17-42) ＋ ResidualBlock 缓存传递 (214-235) ＋ clear_cache (853-861)",
+    more: {href: "#", text: "结合上方 Wan-VAE 论文图：分块只是把时间维切开逐段算，数学上等价于整段卷积"},
+    code:
+`# ① CausalConv3d：时间维只向「过去」padding（左 2*pad，右 0）→ 当前帧看不到未来帧
+class CausalConv3d(nn.Conv3d):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k)
+        self._padding = (self.padding[2], self.padding[2],
+                         self.padding[1], self.padding[1],
+                         2 * self.padding[0], 0)   # ★ (W,W, H,H, 过去,未来=0)
+        self.padding = (0, 0, 0)
+    def forward(self, x, cache_x=None):
+        padding = list(self._padding)
+        if cache_x is not None and self._padding[4] > 0:
+            x = torch.cat([cache_x, x], dim=2)     # 把上一块的边界帧拼到本块前面
+            padding[4] -= cache_x.shape[2]         # 用真实历史帧顶替「过去」padding
+        return super().forward(F.pad(x, padding))
+
+# ② 每个 conv 都把自己最后 CACHE_T 帧存进 feat_cache[idx]，传给下一块（ResidualBlock 内同理）
+cache_x = x[:, :, -CACHE_T:, :, :].clone()
+x = layer(x, feat_cache[idx]); feat_cache[idx] = cache_x; feat_idx[0] += 1
+
+# ③ clear_cache：每次 encode/decode 前后把 feat_map 清零（每个 conv 一格环形缓存）
+def clear_cache(self):
+    self._enc_feat_map = [None] * count_conv3d(self.encoder)   # encoder 端
+    self._feat_map     = [None] * count_conv3d(self.decoder)   # decoder 端
+# → 分块逐段算（峰值显存 ∝ 一块），靠 feat_cache 传边界 → 与整段卷积结果完全一致`
+  }
+};
+
+
+/* ===== 极简 Python 语法高亮（仅着色注释/字符串/数字/关键字/函数名）===== */
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function hl(code){
+  const KW = new Set(('def return if else elif for in with not is and or None True False '
+    + 'import from class lambda while assert del yield as').split(' '));
+  const re = /('(?:\\.|[^'])*'|"(?:\\.|[^"])*")|(\b\d+\.?\d*\b)|([A-Za-z_]\w*)|(\s+)|([^\s])/g;
+  const out = [];
+  for (let line of code.split('\n')){
+    const hi = findComment(line);
+    const head = hi >= 0 ? line.slice(0, hi) : line;
+    const comment = hi >= 0 ? line.slice(hi) : '';
+    let html = '';
+    head.replace(re, (m, str, num, ident, ws, other, offset) => {
+      if (str)      html += '<span class="tok-str">' + esc(str) + '</span>';
+      else if (num) html += '<span class="tok-num">' + num + '</span>';
+      else if (ident){
+        if (KW.has(ident)) html += '<span class="tok-kw">' + ident + '</span>';
+        else if (/^\s*\(/.test(head.slice(offset + ident.length)))
+          html += '<span class="tok-fn">' + ident + '</span>';
+        else html += ident;
+      }
+      else if (ws)  html += ws;
+      else          html += esc(other);
+      return m;
+    });
+    out.push(html + (comment ? '<span class="tok-com">' + esc(comment) + '</span>' : ''));
+  }
+  return out.join('\n');
+}
+// 找到「不在字符串内」的第一个 # 位置
+function findComment(line){
+  let q = null;
+  for (let i=0;i<line.length;i++){
+    const c = line[i];
+    if (q){ if (c===q && line[i-1]!=='\\') q=null; }
+    else if (c==="'"||c==='"') q=c;
+    else if (c==='#') return i;
+  }
+  return -1;
+}
+
+/* ===== 点击交互（图 2 / 图 3 通用）===== */
+function wireFigure(hotSel, wrapId, db){
+  const wrap = document.getElementById(wrapId);
+  const hots = document.querySelectorAll(hotSel + ' .hot');
+  if (!wrap || !hots.length) return;
+  let current = null;
+  function close(){
+    wrap.innerHTML = '';
+    hots.forEach(h => h.classList.remove('active'));
+    current = null;
+  }
+  hots.forEach(h => h.addEventListener('click', () => {
+    const key = h.getAttribute('data-mod');
+    if (current === key){ close(); return; }      // 再次点击同一模块 → 收起
+    const d = db[key];
+    if (!d) return;
+    hots.forEach(x => x.classList.remove('active'));
+    h.classList.add('active');
+    current = key;
+    const closeId = wrapId + '-close';
+    wrap.innerHTML =
+      '<div class="codepanel show">'
+      + '<div class="ph"><span><span class="nm">'+d.name+'</span> '
+      + '<span class="fp">'+d.file+'</span></span>'
+      + '<span class="cls" id="'+closeId+'">✕ 关闭</span></div>'
+      + '<pre><code>'+hl(d.code)+'</code></pre>'
+      + (d.more ? '<div class="more"><a href="'+d.more.href+'">🔗 '+d.more.text+'</a></div>' : '')
+      + '</div>';
+    document.getElementById(closeId).addEventListener('click', close);
+    wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }));
+}
+wireFigure('#fig2-hot', 'fig2-code', FIG2_CODE);
+wireFigure('#fig3-hot', 'fig3-code', FIG3_CODE);
+wireFigure('#fig4-hot', 'fig4-code', FIG4_CODE);
+wireFigure('#fig5-hot', 'fig5-code', FIG5_CODE);
+</script>
 </body>
 </html>
